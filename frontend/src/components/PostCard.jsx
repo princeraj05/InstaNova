@@ -1,8 +1,8 @@
-const SERVER = "https://instagram-clone-mern-1luog.onrender.com"
+const SERVER = import.meta.env.VITE_SERVER_URL
 
-export default function PostCard({post}) {
+export default function PostCard({ post }) {
 
-return(
+return (
 
 <div style={{border:"1px solid #ccc",padding:"10px",margin:"10px"}}>
 

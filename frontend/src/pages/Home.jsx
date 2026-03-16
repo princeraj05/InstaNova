@@ -2,6 +2,8 @@ import { useEffect, useState } from "react"
 import Navbar from "../components/Navbar"
 import API from "../api/axios"
 
+const SERVER_URL = import.meta.env.VITE_SERVER_URL
+
 export default function Home(){
 
 const [posts,setPosts] = useState([])
@@ -53,7 +55,7 @@ className="bg-white rounded-xl shadow mb-6 overflow-hidden"
 {post.mediaType === "reel" ? (
 
 <video
-src={`http://localhost:5000/uploads/${post.media}`}
+src={`${SERVER_URL}/uploads/${post.media}`}
 className="w-full"
 controls
 />
@@ -61,7 +63,7 @@ controls
 ) : (
 
 <img
-src={`http://localhost:5000/uploads/${post.media}`}
+src={`${SERVER_URL}/uploads/${post.media}`}
 className="w-full"
 />
 
@@ -82,4 +84,5 @@ className="w-full"
 </div>
 
 )
+
 }
