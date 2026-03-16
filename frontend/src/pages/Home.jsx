@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import Navbar from "../components/Navbar"
 import API from "../api/axios"
 
@@ -7,6 +7,7 @@ const SERVER_URL = import.meta.env.VITE_SERVER_URL
 export default function Home(){
 
 const [posts,setPosts] = useState([])
+const videoRefs = useRef([])
 
 useEffect(()=>{
 
@@ -27,6 +28,54 @@ fetchPosts()
 
 },[])
 
+useEffect(()=>{
+
+const observer = new IntersectionObserver(
+
+(entries)=>{
+
+entries.forEach((entry)=>{
+
+const video = entry.target
+
+if(entry.isIntersecting){
+
+video.muted = false
+video.play()
+
+}else{
+
+video.pause()
+video.muted = true
+
+}
+
+})
+
+},
+
+{ threshold: 0.6 }
+
+)
+
+videoRefs.current.forEach((video)=>{
+
+if(video) observer.observe(video)
+
+})
+
+return ()=>{
+
+videoRefs.current.forEach((video)=>{
+
+if(video) observer.unobserve(video)
+
+})
+
+}
+
+},[posts])
+
 return(
 
 <div className="flex bg-gray-100 min-h-screen">
@@ -41,7 +90,7 @@ return(
 Feed
 </h2>
 
-{posts.map((post)=>(
+{posts.map((post,index)=>(
 
 <div
 key={post._id}
@@ -55,9 +104,10 @@ className="bg-white rounded-xl shadow mb-6 overflow-hidden"
 {post.mediaType === "reel" ? (
 
 <video
+ref={(el)=>videoRefs.current[index]=el}
 src={`${SERVER_URL}/uploads/${post.media}`}
 className="w-full"
-controls
+loop
 />
 
 ) : (
