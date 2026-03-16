@@ -45,17 +45,17 @@ fetchPosts()
 
 return(
 
-<div className="flex">
+<div className="flex bg-gray-100 min-h-screen">
 
 <Navbar/>
 
-<div className="flex-1 md:ml-64 p-6">
+<div className="w-full md:ml-64 flex justify-center">
 
-<div className="max-w-4xl mx-auto">
+<div className="w-full max-w-4xl p-4">
 
 {/* PROFILE HEADER */}
 
-<div className="flex flex-col md:flex-row items-center md:items-start gap-8">
+<div className="flex flex-col md:flex-row items-center md:items-start gap-6">
 
 <img
 src={
@@ -63,39 +63,29 @@ user.profilePic
 ? `${SERVER_URL}/uploads/${user.profilePic}`
 : "https://i.pravatar.cc/150"
 }
-className="w-28 h-28 md:w-36 md:h-36 rounded-full object-cover"
+className="w-28 h-28 md:w-32 md:h-32 rounded-full object-cover border"
 />
 
-<div>
+<div className="text-center md:text-left">
 
-<h2 className="text-2xl font-semibold mb-2">
+<h2 className="text-2xl font-bold">
 {user.username}
 </h2>
 
-{/* STATS */}
+<div className="flex justify-center md:justify-start gap-6 mt-3 text-sm md:text-base">
 
-<div className="flex gap-6 text-sm mb-2">
-
-<p>
-<span className="font-semibold">{posts.length}</span> posts
-</p>
-
-<p>
-<span className="font-semibold">{user.followers?.length || 0}</span> followers
-</p>
-
-<p>
-<span className="font-semibold">{user.following?.length || 0}</span> following
-</p>
+<p><b>{posts.length}</b> posts</p>
+<p><b>{user.followers?.length || 0}</b> followers</p>
+<p><b>{user.following?.length || 0}</b> following</p>
 
 </div>
 
-<p className="text-gray-700 mb-3">
+<p className="mt-3 text-gray-600 max-w-md">
 {user.bio}
 </p>
 
 <Link to="/edit-profile">
-<button className="px-4 py-1 border rounded-md hover:bg-gray-100">
+<button className="mt-3 px-4 py-1 border rounded-md hover:bg-gray-100">
 Edit Profile
 </button>
 </Link>
@@ -106,13 +96,13 @@ Edit Profile
 
 <hr className="my-8"/>
 
-<h3 className="font-semibold mb-4">
+{/* POSTS GRID */}
+
+<h3 className="text-lg font-semibold mb-4">
 Posts
 </h3>
 
-{/* POSTS GRID */}
-
-<div className="grid grid-cols-3 gap-2 md:gap-4">
+<div className="grid grid-cols-2 md:grid-cols-3 gap-3">
 
 {posts.map((post)=>(
 
@@ -121,7 +111,7 @@ post.mediaType === "reel" ? (
 <video
 key={post._id}
 src={`${SERVER_URL}/uploads/${post.media}`}
-className="w-full aspect-square object-cover rounded-md"
+className="w-full h-40 md:h-56 object-cover rounded-lg"
 controls
 />
 
@@ -130,7 +120,7 @@ controls
 <img
 key={post._id}
 src={`${SERVER_URL}/uploads/${post.media}`}
-className="w-full aspect-square object-cover rounded-md"
+className="w-full h-40 md:h-56 object-cover rounded-lg"
 />
 
 )
