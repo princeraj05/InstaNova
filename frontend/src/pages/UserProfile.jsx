@@ -45,13 +45,17 @@ fetchPosts()
 
 return(
 
-<div style={{display:"flex"}}>
+<div className="flex bg-gray-100 min-h-screen">
 
 <Navbar/>
 
-<div style={{marginLeft:"250px",padding:"40px"}}>
+<div className="w-full md:ml-64 flex justify-center">
 
-<div style={{display:"flex",alignItems:"center",gap:"40px"}}>
+<div className="w-full max-w-4xl p-4">
+
+{/* PROFILE HEADER */}
+
+<div className="flex flex-col md:flex-row items-center md:items-start gap-6">
 
 <img
 src={
@@ -59,19 +63,16 @@ user.profilePic
 ? `${SERVER_URL}/uploads/${user.profilePic}`
 : "https://i.pravatar.cc/150"
 }
-style={{
-width:"120px",
-height:"120px",
-borderRadius:"50%",
-objectFit:"cover"
-}}
+className="w-28 h-28 md:w-32 md:h-32 rounded-full object-cover border"
 />
 
-<div>
+<div className="text-center md:text-left">
 
-<h2>{user.username}</h2>
+<h2 className="text-2xl font-bold">
+{user.username}
+</h2>
 
-<div style={{display:"flex",gap:"20px",marginTop:"10px"}}>
+<div className="flex justify-center md:justify-start gap-6 mt-3 text-sm md:text-base">
 
 <p><b>{posts.length}</b> posts</p>
 <p><b>{user.followers?.length || 0}</b> followers</p>
@@ -79,7 +80,7 @@ objectFit:"cover"
 
 </div>
 
-<p style={{marginTop:"10px"}}>
+<p className="mt-3 text-gray-600 max-w-md">
 {user.bio}
 </p>
 
@@ -87,17 +88,15 @@ objectFit:"cover"
 
 </div>
 
-<hr style={{margin:"40px 0"}}/>
+<hr className="my-8"/>
 
-<h3>Posts</h3>
+{/* POSTS GRID */}
 
-<div
-style={{
-display:"grid",
-gridTemplateColumns:"repeat(3,1fr)",
-gap:"10px"
-}}
->
+<h3 className="text-lg font-semibold mb-4">
+Posts
+</h3>
+
+<div className="grid grid-cols-2 md:grid-cols-3 gap-3">
 
 {posts.map((post)=>(
 
@@ -106,12 +105,7 @@ post.mediaType === "reel" ? (
 <video
 key={post._id}
 src={`${SERVER_URL}/uploads/${post.media}`}
-style={{
-width:"100%",
-height:"200px",
-objectFit:"cover",
-borderRadius:"6px"
-}}
+className="w-full h-40 md:h-56 object-cover rounded-lg"
 controls
 />
 
@@ -120,17 +114,14 @@ controls
 <img
 key={post._id}
 src={`${SERVER_URL}/uploads/${post.media}`}
-style={{
-width:"100%",
-height:"200px",
-objectFit:"cover",
-borderRadius:"6px"
-}}
+className="w-full h-40 md:h-56 object-cover rounded-lg"
 />
 
 )
 
 ))}
+
+</div>
 
 </div>
 
