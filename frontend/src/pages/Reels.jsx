@@ -1,28 +1,30 @@
-import { useEffect, useState, useRef } from "react"
-import Navbar from "../components/Navbar"
-import API from "../api/axios"
+import { useEffect, useState, useRef } from "react";
+import Navbar from "../components/Navbar";
+import API from "../api/axios";
 
-export default function Reels(){
+const SERVER_URL = import.meta.env.VITE_SERVER_URL;
 
-const [reels,setReels] = useState([])
-const videoRefs = useRef([])
+export default function Reels() {
+
+const [reels,setReels] = useState([]);
+const videoRefs = useRef([]);
 
 useEffect(()=>{
 
 const fetchReels = async()=>{
 
 try{
-const res = await API.get("/reels")
-setReels(res.data)
+const res = await API.get("/reels");
+setReels(res.data);
 }catch(err){
-console.log(err)
+console.log(err);
 }
 
 }
 
-fetchReels()
+fetchReels();
 
-},[])
+},[]);
 
 
 
@@ -34,12 +36,12 @@ const observer = new IntersectionObserver(
 
 entries.forEach(entry=>{
 
-const video = entry.target
+const video = entry.target;
 
 if(entry.isIntersecting){
-video.play()
+video.play();
 }else{
-video.pause()
+video.pause();
 }
 
 })
@@ -50,19 +52,19 @@ video.pause()
 threshold:0.8
 }
 
-)
+);
 
 videoRefs.current.forEach(video=>{
-if(video) observer.observe(video)
-})
+if(video) observer.observe(video);
+});
 
 return ()=>{
 videoRefs.current.forEach(video=>{
-if(video) observer.unobserve(video)
-})
+if(video) observer.unobserve(video);
+});
 }
 
-},[reels])
+},[reels]);
 
 
 
@@ -83,7 +85,7 @@ className="h-screen flex justify-center items-center snap-start"
 
 <video
 ref={el => videoRefs.current[index] = el}
-src={`http://localhost:5000/uploads/${reel.media}`}
+src={`${SERVER_URL}/uploads/${reel.media}`}
 className="h-[90vh] w-auto max-w-[420px] object-cover rounded-lg"
 loop
 controls
