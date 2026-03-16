@@ -44,11 +44,15 @@ const res = await API.put(`/user/follow/${id}`,{
 currentUserId
 })
 
-alert(res.data)
+alert(res.data.message || "Success")
+
+// optional: user list update
+setUsers(users.filter(u => u._id !== id))
 
 }catch(err){
 
-alert("Error")
+console.log(err)
+alert("Follow failed")
 
 }
 
@@ -116,7 +120,7 @@ className="w-10 h-10 rounded-full object-cover"
 
 <button
 onClick={()=>followUser(user._id)}
-className="bg-blue-500 text-white px-3 py-1 rounded-md"
+className="bg-blue-500 text-white px-3 py-1 rounded-md hover:bg-blue-600"
 >
 Follow
 </button>
