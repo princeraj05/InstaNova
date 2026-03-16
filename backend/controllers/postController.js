@@ -26,18 +26,14 @@ caption
 
 await newPost.save()
 
-res.status(201).json({
-message: "Post created successfully",
-post: newPost
-})
+res.status(201).json(newPost)
 
 } catch (err) {
 
 console.log("Create Post Error:", err)
 
 res.status(500).json({
-message: "Server error",
-error: err.message
+message: "Server error"
 })
 
 }
@@ -58,19 +54,17 @@ res.json(posts)
 
 } catch (err) {
 
-console.log("Get Posts Error:", err)
+console.log(err)
 
 res.status(500).json({
-message: "Server error",
-error: err.message
+message: "Server error"
 })
 
 }
 
 }
-// ============================
-// Get All Posts (Home Feed)
-// ============================
+
+
 
 export const getAllPosts = async (req, res) => {
 
@@ -84,11 +78,10 @@ res.json(posts)
 
 } catch (err) {
 
-console.log("Get All Posts Error:", err)
+console.log(err)
 
 res.status(500).json({
-message: "Server error",
-error: err.message
+message: "Server error"
 })
 
 }

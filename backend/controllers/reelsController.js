@@ -1,6 +1,5 @@
 import Post from "../models/Post.js"
 
-// get all reels
 export const getReels = async (req,res)=>{
 
 try{

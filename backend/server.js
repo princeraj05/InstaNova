@@ -1,5 +1,4 @@
 import express from "express"
-import mongoose from "mongoose"
 import cors from "cors"
 import dotenv from "dotenv"
 
@@ -21,16 +20,18 @@ app.use(express.json())
 // connect database
 connectDB()
 
+// static uploads folder
+app.use("/uploads", express.static("uploads"))
+
 // routes
-app.use("/api/reels",reelsRoutes)
 app.use("/api/auth", authRoutes)
 app.use("/api/user", userRoutes)
 app.use("/api/search", searchRoutes)
 app.use("/api/posts", postRoutes)
+app.use("/api/reels", reelsRoutes)
 
-// static uploads folder
-app.use("/uploads", express.static("uploads"))
+const PORT = process.env.PORT || 5000
 
-app.listen(5000, () => {
-console.log("Server running on port 5000")
+app.listen(PORT, () => {
+console.log(`Server running on port ${PORT}`)
 })
