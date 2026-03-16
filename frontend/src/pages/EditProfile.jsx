@@ -2,6 +2,8 @@ import { useState, useEffect } from "react"
 import API from "../api/axios"
 import { useNavigate } from "react-router-dom"
 
+const SERVER_URL = import.meta.env.VITE_SERVER_URL
+
 export default function EditProfile(){
 
 const userId = localStorage.getItem("userId")
@@ -25,9 +27,7 @@ setBio(res.data.bio || "")
 setPreview(res.data.profilePic || "")
 
 }catch(err){
-
 console.log(err)
-
 }
 
 }
@@ -37,7 +37,6 @@ fetchUser()
 }
 
 },[userId])
-
 
 
 const handleUpdate = async()=>{
@@ -60,20 +59,16 @@ headers:{
 })
 
 alert("Profile updated")
-
 navigate("/profile")
 
 }catch(err){
 
 console.log(err)
-
 alert("Update failed")
 
 }
 
 }
-
-
 
 return(
 
@@ -81,15 +76,13 @@ return(
 
 <h2>Edit Profile</h2>
 
-{/* Profile Preview */}
-
 {preview && (
 
 <img
 src={
 preview.startsWith("http")
 ? preview
-: `http://localhost:5000/uploads/${preview}`
+: `${SERVER_URL}/uploads/${preview}`
 }
 style={{
 width:"120px",
@@ -137,5 +130,4 @@ Update Profile
 </div>
 
 )
-
 }

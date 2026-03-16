@@ -1,5 +1,5 @@
 import { useState } from "react"
-import axios from "axios"
+import API from "../api/axios"
 import Navbar from "../components/Navbar"
 
 export default function CreatePost(){
@@ -26,10 +26,11 @@ formData.append("userId",userId)
 
 try{
 
-await axios.post(
-"http://localhost:5000/api/posts/create",
-formData
-)
+await API.post("/posts/create",formData,{
+headers:{
+"Content-Type":"multipart/form-data"
+}
+})
 
 alert("Uploaded successfully")
 
@@ -87,7 +88,7 @@ className="w-full border p-3 rounded-md mb-4"
 
 <button
 onClick={handleUpload}
-className="w-full bg-green-500 text-white py-2 rounded-md hover:bg-green-600 transition"
+className="w-full bg-green-500 text-white py-2 rounded-md hover:bg-green-600"
 >
 Upload
 </button>
