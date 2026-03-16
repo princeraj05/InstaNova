@@ -1,7 +1,6 @@
 import express from "express"
 import multer from "multer"
 import fs from "fs"
-import path from "path"
 
 import { createPost, getUserPosts, getAllPosts } from "../controllers/postController.js"
 
@@ -9,9 +8,9 @@ const router = express.Router()
 
 const uploadPath = "uploads"
 
-// create uploads folder if not exists
+// ensure uploads folder exists
 if (!fs.existsSync(uploadPath)) {
-  fs.mkdirSync(uploadPath)
+fs.mkdirSync(uploadPath, { recursive: true })
 }
 
 const storage = multer.diskStorage({
@@ -21,10 +20,8 @@ cb(null, uploadPath)
 },
 
 filename: (req, file, cb) => {
-
 const uniqueName = Date.now() + "-" + file.originalname
 cb(null, uniqueName)
-
 }
 
 })

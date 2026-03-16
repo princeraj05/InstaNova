@@ -1,6 +1,9 @@
 import express from "express"
 import cors from "cors"
 import dotenv from "dotenv"
+import fs from "fs"
+import path from "path"
+import { fileURLToPath } from "url"
 
 import connectDB from "./config/db.js"
 
@@ -20,15 +23,35 @@ app.use(express.json())
 // connect database
 connectDB()
 
-// static uploads folder
-app.use("/uploads", express.static("uploads"))
+// ==========================
+// uploads folder ensure
+// ==========================
 
-// routes
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
+
+const uploadsPath = path.join(__dirname, "uploads")
+
+if (!fs.existsSync(uploadsPath)) {
+fs.mkdirSync(uploadsPath, { recursive: true })
+}
+
+// serve uploads
+app.use("/uploads", express.static(uploadsPath))
+
+// ==========================
+// API routes
+// ==========================
+
 app.use("/api/auth", authRoutes)
 app.use("/api/user", userRoutes)
 app.use("/api/search", searchRoutes)
 app.use("/api/posts", postRoutes)
 app.use("/api/reels", reelsRoutes)
+
+// ==========================
+// start server
+// ==========================
 
 const PORT = process.env.PORT || 5000
 
