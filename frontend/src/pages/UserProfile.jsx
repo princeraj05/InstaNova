@@ -3,6 +3,8 @@ import { useParams } from "react-router-dom"
 import Navbar from "../components/Navbar"
 import API from "../api/axios"
 
+const SERVER_URL = import.meta.env.VITE_SERVER_URL
+
 export default function UserProfile(){
 
 const { id } = useParams()
@@ -49,14 +51,12 @@ return(
 
 <div style={{marginLeft:"250px",padding:"40px"}}>
 
-{/* PROFILE HEADER */}
-
 <div style={{display:"flex",alignItems:"center",gap:"40px"}}>
 
 <img
 src={
 user.profilePic
-? `http://localhost:5000/uploads/${user.profilePic}`
+? `${SERVER_URL}/uploads/${user.profilePic}`
 : "https://i.pravatar.cc/150"
 }
 style={{
@@ -91,8 +91,6 @@ objectFit:"cover"
 
 <h3>Posts</h3>
 
-{/* POSTS GRID */}
-
 <div
 style={{
 display:"grid",
@@ -107,7 +105,7 @@ post.mediaType === "reel" ? (
 
 <video
 key={post._id}
-src={`http://localhost:5000/uploads/${post.media}`}
+src={`${SERVER_URL}/uploads/${post.media}`}
 style={{
 width:"100%",
 height:"200px",
@@ -121,7 +119,7 @@ controls
 
 <img
 key={post._id}
-src={`http://localhost:5000/uploads/${post.media}`}
+src={`${SERVER_URL}/uploads/${post.media}`}
 style={{
 width:"100%",
 height:"200px",
@@ -141,5 +139,4 @@ borderRadius:"6px"
 </div>
 
 )
-
 }

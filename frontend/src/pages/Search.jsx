@@ -3,6 +3,8 @@ import Navbar from "../components/Navbar"
 import API from "../api/axios"
 import { useNavigate } from "react-router-dom"
 
+const SERVER_URL = import.meta.env.VITE_SERVER_URL
+
 export default function Search(){
 
 const [query,setQuery] = useState("")
@@ -74,7 +76,7 @@ Search Users
 placeholder="Search username..."
 value={query}
 onChange={handleSearch}
-className="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+className="w-full border p-3 rounded-lg"
 />
 
 <div className="mt-6 space-y-4">
@@ -89,7 +91,7 @@ No users found
 
 <div
 key={user._id}
-className="flex items-center justify-between bg-white p-3 rounded-lg shadow-sm hover:shadow-md transition"
+className="flex items-center justify-between bg-white p-3 rounded-lg shadow"
 >
 
 <div
@@ -100,13 +102,13 @@ className="flex items-center gap-3 cursor-pointer"
 <img
 src={
 user.profilePic
-? `http://localhost:5000/uploads/${user.profilePic}`
+? `${SERVER_URL}/uploads/${user.profilePic}`
 : "https://i.pravatar.cc/150"
 }
 className="w-10 h-10 rounded-full object-cover"
 />
 
-<span className="font-medium text-gray-800">
+<span className="font-medium">
 {user.username}
 </span>
 
@@ -114,7 +116,7 @@ className="w-10 h-10 rounded-full object-cover"
 
 <button
 onClick={()=>followUser(user._id)}
-className="bg-blue-500 text-white px-3 py-1 rounded-md hover:bg-blue-600 transition"
+className="bg-blue-500 text-white px-3 py-1 rounded-md"
 >
 Follow
 </button>
