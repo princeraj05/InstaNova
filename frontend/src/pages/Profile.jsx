@@ -53,6 +53,8 @@ return(
 
 <div className="max-w-4xl mx-auto">
 
+{/* PROFILE HEADER */}
+
 <div className="flex flex-col md:flex-row items-center md:items-start gap-8">
 
 <img
@@ -70,14 +72,32 @@ className="w-28 h-28 md:w-36 md:h-36 rounded-full object-cover"
 {user.username}
 </h2>
 
-<p>{user.bio}</p>
+{/* STATS */}
+
+<div className="flex gap-6 text-sm mb-2">
+
+<p>
+<span className="font-semibold">{posts.length}</span> posts
+</p>
+
+<p>
+<span className="font-semibold">{user.followers?.length || 0}</span> followers
+</p>
+
+<p>
+<span className="font-semibold">{user.following?.length || 0}</span> following
+</p>
+
+</div>
+
+<p className="text-gray-700 mb-3">
+{user.bio}
+</p>
 
 <Link to="/edit-profile">
-
-<button className="px-4 py-1 border rounded-md">
+<button className="px-4 py-1 border rounded-md hover:bg-gray-100">
 Edit Profile
 </button>
-
 </Link>
 
 </div>
@@ -90,6 +110,8 @@ Edit Profile
 Posts
 </h3>
 
+{/* POSTS GRID */}
+
 <div className="grid grid-cols-3 gap-2 md:gap-4">
 
 {posts.map((post)=>(
@@ -99,7 +121,7 @@ post.mediaType === "reel" ? (
 <video
 key={post._id}
 src={`${SERVER_URL}/uploads/${post.media}`}
-className="w-full aspect-square object-cover"
+className="w-full aspect-square object-cover rounded-md"
 controls
 />
 
@@ -108,7 +130,7 @@ controls
 <img
 key={post._id}
 src={`${SERVER_URL}/uploads/${post.media}`}
-className="w-full aspect-square object-cover"
+className="w-full aspect-square object-cover rounded-md"
 />
 
 )
