@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import Navbar from "../components/Navbar"
 import API from "../api/axios"
 
@@ -13,29 +13,38 @@ export default function Messages(){
   const [selectedUser,setSelectedUser] = useState(null)
   const [conversation,setConversation] = useState(null)
 
-  // 🔍 search users
-  const handleSearch = async () => {
-    try{
-      const res = await API.get(`/search?query=${search}`) // ✅ FIXED
-      setUsers(res.data)
-    }catch(err){
-      console.log(err)
+  // 🔍 LIVE SEARCH (NO BUTTON)
+  const handleSearch = async(e)=>{
+    const value = e.target.value
+    setSearch(value)
+
+    if(value.length > 0){
+      try{
+        const res = await API.get(`/search?username=${value}`)
+        setUsers(res.data)
+      }catch(err){
+        console.log(err)
+        setUsers([])
+      }
+    }else{
+      setUsers([])
     }
   }
 
-  // 👤 select user + create/get conversation
-  const selectUser = async (user) => {
+  // 👤 SELECT USER
+  const selectUser = async(user)=>{
     setSelectedUser(user)
 
     try{
-      const res = await API.post("/conversations", { // ✅ FIXED
-        senderId: userId,
-        receiverId: user._id
+
+      const res = await API.post("/conversations",{
+        senderId:userId,
+        receiverId:user._id
       })
 
       setConversation(res.data)
 
-      const msgs = await API.get(`/messages/${res.data._id}`) // ✅ FIXED
+      const msgs = await API.get(`/messages/${res.data._id}`)
       setMessages(msgs.data)
 
     }catch(err){
@@ -43,9 +52,8 @@ export default function Messages(){
     }
   }
 
-  // 📩 send message
-  const sendMessage = async () => {
-
+  // 📩 SEND MESSAGE
+  const sendMessage = async()=>{
     if(!message || !conversation) return
 
     const newMsg = {
@@ -55,7 +63,7 @@ export default function Messages(){
     }
 
     try{
-      await API.post("/messages", newMsg) // ✅ FIXED
+      await API.post("/messages", newMsg)
 
       setMessages(prev => [...prev,newMsg])
       setMessage("")
@@ -66,51 +74,81 @@ export default function Messages(){
   }
 
   return(
-    <div style={{display:"flex"}}>
+    <div className="flex min-h-screen bg-gray-100">
 
       <Navbar/>
 
-      <div style={{marginLeft:"250px",padding:"40px", width:"100%"}}>
+      <div className="w-full md:ml-64 flex">
 
-        <h2>Messages</h2>
+        {/* LEFT PANEL */}
+        <div className="w-1/3 border-r p-4 bg-white">
 
-        {/* 🔍 SEARCH */}
-        <input
-          placeholder="Search user..."
-          value={search}
-          onChange={(e)=>setSearch(e.target.value)}
-        />
-        <button onClick={handleSearch}>Search</button>
+          <h2 className="text-xl font-bold mb-4">Messages</h2>
 
-        {/* 👤 USER LIST */}
-        {users.map(u=>(
-          <p key={u._id} onClick={()=>selectUser(u)} style={{cursor:"pointer"}}>
-            {u.username}
-          </p>
-        ))}
+          <input
+            placeholder="Search user..."
+            value={search}
+            onChange={handleSearch}
+            className="w-full border p-2 rounded mb-4"
+          />
 
-        <hr/>
+          {users.map(u=>(
+            <div
+              key={u._id}
+              onClick={()=>selectUser(u)}
+              className="p-2 hover:bg-gray-100 cursor-pointer rounded"
+            >
+              {u.username}
+            </div>
+          ))}
 
-        {/* 💬 CHAT */}
-        <h3>
-          {selectedUser ? `Chat with ${selectedUser.username}` : "Select user"}
-        </h3>
+        </div>
 
-        {messages.map((m,i)=>(
-          <p key={i}>
-            <b>{m.sender === userId ? "Me" : "Them"}:</b> {m.text}
-          </p>
-        ))}
+        {/* RIGHT CHAT */}
+        <div className="w-2/3 p-6">
 
-        {selectedUser && (
-          <>
-            <input
-              value={message}
-              onChange={(e)=>setMessage(e.target.value)}
-            />
-            <button onClick={sendMessage}>Send</button>
-          </>
-        )}
+          {selectedUser ? (
+            <>
+              <h3 className="text-lg font-semibold mb-4">
+                Chat with {selectedUser.username}
+              </h3>
+
+              <div className="h-[400px] overflow-y-auto border p-3 rounded bg-white">
+
+                {messages.map((m,i)=>(
+                  <div
+                    key={i}
+                    className={`mb-2 ${
+                      m.sender === userId ? "text-right" : "text-left"
+                    }`}
+                  >
+                    <span className="inline-block bg-blue-500 text-white px-3 py-1 rounded">
+                      {m.text}
+                    </span>
+                  </div>
+                ))}
+
+              </div>
+
+              <div className="flex mt-4 gap-2">
+                <input
+                  value={message}
+                  onChange={(e)=>setMessage(e.target.value)}
+                  className="flex-1 border p-2 rounded"
+                />
+                <button
+                  onClick={sendMessage}
+                  className="bg-blue-500 text-white px-4 rounded"
+                >
+                  Send
+                </button>
+              </div>
+            </>
+          ) : (
+            <p>Select user to start chat</p>
+          )}
+
+        </div>
 
       </div>
 

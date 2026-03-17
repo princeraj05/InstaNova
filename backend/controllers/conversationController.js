@@ -1,23 +1,36 @@
-import User from "../models/User.js"
+import Conversation from "../models/Conversation.js"
 
-export const searchUsers = async (req, res) => {
+// 💬 CREATE OR GET CONVERSATION
+export const createConversation = async (req, res) => {
   try {
 
-    // 🔥 support both query & username
-    const keyword = req.query.query || req.query.username || ""
+    const { senderId, receiverId } = req.body
 
-    const users = await User.find({
-      username: {
-        $regex: keyword,
-        $options: "i"
-      }
+    // ❌ validation
+    if (!senderId || !receiverId) {
+      return res.status(400).json({ message: "Missing user IDs" })
+    }
+
+    // 🔥 CHECK EXISTING CONVERSATION
+    const existing = await Conversation.findOne({
+      members: { $all: [senderId, receiverId] }
     })
-    .select("-password")
-    .limit(10)
 
-    res.json(users)
+    if (existing) {
+      return res.json(existing) // ✅ reuse old
+    }
+
+    // 🆕 CREATE NEW
+    const newConv = new Conversation({
+      members: [senderId, receiverId]
+    })
+
+    const saved = await newConv.save()
+
+    res.json(saved)
 
   } catch (err) {
-    res.status(500).json(err)
+    console.log("Conversation Error:", err)
+    res.status(500).json({ message: "Conversation failed" })
   }
 }
