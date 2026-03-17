@@ -18,7 +18,8 @@ export default function Messages(){
     socket.on("getMessage",(data)=>{
       setMessages(prev => [...prev, data])
     })
-  },[])
+
+  },[userId])
 
   const sendMessage = async () => {
 
@@ -28,15 +29,15 @@ export default function Messages(){
       text:message
     }
 
-    await API.post("/messages", newMsg)
+    await API.post("/api/messages", newMsg) // ✅ FIXED
 
     socket.emit("sendMessage", {
       senderId:userId,
-      receiverId:"TARGET_USER_ID",
+      receiverId:userId, // 🔥 TEMP FIX
       text:message
     })
 
-    setMessages([...messages,newMsg])
+    setMessages(prev => [...prev,newMsg])
     setMessage("")
   }
 
