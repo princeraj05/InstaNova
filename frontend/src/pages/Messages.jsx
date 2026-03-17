@@ -18,10 +18,11 @@ export default function Messages(){
 
   // 🔥 CONNECT SOCKET
   useEffect(()=>{
-    socket.current = io(import.meta.env.VITE_API_URL)
+    socket.current = io(import.meta.env.VITE_SERVER_URL, {
+      transports: ["websocket"]
+    })
 
     socket.current.on("newMessage",(data)=>{
-      // sirf current chat ke messages add karo
       if(data.conversationId === conversation?._id){
         setMessages(prev => [...prev, data])
       }
@@ -33,7 +34,7 @@ export default function Messages(){
 
   },[conversation])
 
-  // 🔍 LIVE SEARCH
+  // 🔍 SEARCH
   const handleSearch = async(e)=>{
     const value = e.target.value
     setSearch(value)
@@ -42,8 +43,7 @@ export default function Messages(){
       try{
         const res = await API.get(`/search?username=${value}`)
         setUsers(res.data)
-      }catch(err){
-        console.log(err)
+      }catch{
         setUsers([])
       }
     }else{
@@ -55,20 +55,15 @@ export default function Messages(){
   const selectUser = async(user)=>{
     setSelectedUser(user)
 
-    try{
-      const res = await API.post("/conversations",{
-        senderId:userId,
-        receiverId:user._id
-      })
+    const res = await API.post("/conversations",{
+      senderId:userId,
+      receiverId:user._id
+    })
 
-      setConversation(res.data)
+    setConversation(res.data)
 
-      const msgs = await API.get(`/messages/${res.data._id}`)
-      setMessages(msgs.data)
-
-    }catch(err){
-      console.log(err)
-    }
+    const msgs = await API.get(`/messages/${res.data._id}`)
+    setMessages(msgs.data)
   }
 
   // 📩 SEND MESSAGE
@@ -81,14 +76,12 @@ export default function Messages(){
       text: message
     }
 
-    try{
-      await API.post("/messages", newMsg)
+    await API.post("/messages", newMsg)
 
-      setMessage("")
+    // 🔥 instant UI
+    setMessages(prev => [...prev,newMsg])
 
-    }catch(err){
-      console.log(err)
-    }
+    setMessage("")
   }
 
   return(
@@ -98,7 +91,7 @@ export default function Messages(){
 
       <div className="w-full md:ml-64 flex">
 
-        {/* LEFT PANEL */}
+        {/* LEFT */}
         <div className="w-1/3 border-r p-4 bg-white">
 
           <h2 className="text-xl font-bold mb-4">Messages</h2>
@@ -122,7 +115,7 @@ export default function Messages(){
 
         </div>
 
-        {/* RIGHT CHAT */}
+        {/* RIGHT */}
         <div className="w-2/3 p-6">
 
           {selectedUser ? (

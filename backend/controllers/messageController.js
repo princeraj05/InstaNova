@@ -1,14 +1,12 @@
 import Message from "../models/Message.js"
-import { io } from "../server.js" // 🔥 IMPORT SOCKET
+import { io } from "../server.js"
 
-// send message
 export const sendMessage = async (req, res) => {
   try {
-
     const newMessage = new Message(req.body)
     const savedMessage = await newMessage.save()
 
-    // 🔥 SOCKET EMIT (MAIN FIX)
+    // 🔥 REALTIME EMIT
     io.emit("newMessage", savedMessage)
 
     res.json(savedMessage)
@@ -18,7 +16,6 @@ export const sendMessage = async (req, res) => {
   }
 }
 
-// get messages
 export const getMessages = async (req, res) => {
   try {
     const messages = await Message.find({

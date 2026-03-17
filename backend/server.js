@@ -1,4 +1,3 @@
-export { io }
 import express from "express"
 import cors from "cors"
 import dotenv from "dotenv"
@@ -25,16 +24,12 @@ const app = express()
 app.use(cors())
 app.use(express.json())
 
-// DB connect
+// DB
 connectDB()
 
-// ==========================
-// uploads folder ensure
-// ==========================
-
+// uploads
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
-
 const uploadsPath = path.join(__dirname, "uploads")
 
 if (!fs.existsSync(uploadsPath)) {
@@ -43,10 +38,7 @@ if (!fs.existsSync(uploadsPath)) {
 
 app.use("/uploads", express.static(uploadsPath))
 
-// ==========================
-// API routes
-// ==========================
-
+// routes
 app.use("/api/messages", messageRoutes)
 app.use("/api/conversations", conversationRoutes)
 app.use("/api/auth", authRoutes)
@@ -56,18 +48,23 @@ app.use("/api/posts", postRoutes)
 app.use("/api/reels", reelsRoutes)
 
 // ==========================
-// SOCKET.IO SETUP
+// 🔥 SOCKET SETUP (MERGED)
 // ==========================
 
-// ❗ IMPORTANT: http server banana hoga
 const server = http.createServer(app)
 
-const io = new Server(server, {
+// 👉 EXPORT IO (IMPORTANT)
+let io
+export { io }
+
+io = new Server(server, {
   cors: {
-    origin: "*"
+    origin: "*",
+    methods: ["GET", "POST"]
   }
 })
 
+// 🔥 ONLINE USERS SYSTEM
 let users = []
 
 const addUser = (userId, socketId) => {
@@ -87,25 +84,26 @@ const removeUser = (socketId) => {
 io.on("connection", (socket) => {
   console.log("User connected:", socket.id)
 
-  // add user
+  // ✅ ADD USER
   socket.on("addUser", (userId) => {
     addUser(userId, socket.id)
     io.emit("getUsers", users)
   })
 
-  // send message
-  socket.on("sendMessage", ({ senderId, receiverId, text }) => {
+  // ✅ SEND MESSAGE (REALTIME)
+  socket.on("sendMessage", ({ senderId, receiverId, text, conversationId }) => {
     const user = getUser(receiverId)
 
     if (user) {
-      io.to(user.socketId).emit("getMessage", {
-        senderId,
-        text
+      io.to(user.socketId).emit("newMessage", {
+        sender: senderId,
+        text,
+        conversationId
       })
     }
   })
 
-  // disconnect
+  // ❌ DISCONNECT
   socket.on("disconnect", () => {
     console.log("User disconnected:", socket.id)
     removeUser(socket.id)
