@@ -25,7 +25,7 @@ export default function Reels() {
           else video.pause()
         })
       },
-      { threshold: 0.8 }
+      { threshold: 0.7 }
     )
     videoRefs.current.forEach(v => { if (v) observer.observe(v) })
     return () => { videoRefs.current.forEach(v => { if (v) observer.unobserve(v) }) }
@@ -35,61 +35,64 @@ export default function Reels() {
     <div className="flex bg-black min-h-screen">
       <Navbar />
 
-      {/* Reels scroll container */}
-      <div className="flex-1 md:ml-64 h-screen overflow-y-scroll snap-y snap-mandatory scrollbar-none pb-16 md:pb-0">
+      {/* Scroll container — full height, no overflow outside */}
+      <div
+        className="md:ml-64 flex-1 overflow-y-scroll snap-y snap-mandatory"
+        style={{ height: "100dvh", scrollbarWidth: "none" }}
+      >
         {reels.map((reel, index) => (
-          <div key={reel._id}
-            className="relative h-screen flex justify-center items-center snap-start snap-always bg-black">
+          <div
+            key={reel._id}
+            className="relative snap-start snap-always bg-black flex items-center justify-center overflow-hidden"
+            style={{ height: "100dvh" }}
+          >
+            {/* Video fills screen, covers fully on mobile */}
+            <video
+              ref={el => videoRefs.current[index] = el}
+              src={reel.media}
+              className="absolute inset-0 w-full h-full object-cover"
+              loop
+              muted={muted}
+              playsInline
+            />
 
-            {/* Video - correct 9:16 ratio */}
-            <div className="relative h-full max-h-screen w-full flex items-center justify-center">
-              <video
-                ref={el => videoRefs.current[index] = el}
-                src={reel.media}
-                className="h-full w-auto max-w-full object-contain"
-                style={{ maxHeight: "100svh", aspectRatio: "9/16" }}
-                loop
-                muted={muted}
-                playsInline
-              />
+            {/* Dark gradient overlay bottom */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent pointer-events-none" />
 
-              {/* Overlay gradient */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
-
-              {/* User info bottom left */}
-              <div className="absolute bottom-20 left-4 right-16 md:bottom-6">
-                <div className="flex items-center gap-2 mb-2">
-                  <img
-                    src={reel.user?.profilePic || `https://ui-avatars.com/api/?name=${reel.user?.username}&background=6366f1&color=fff&size=40`}
-                    className="w-9 h-9 rounded-full object-cover border-2 border-white"
-                  />
-                  <p className="text-white text-sm font-semibold drop-shadow">{reel.user?.username}</p>
-                </div>
-                {reel.caption && (
-                  <p className="text-white text-sm drop-shadow line-clamp-2">{reel.caption}</p>
-                )}
+            {/* ── BOTTOM LEFT: user info + caption ── */}
+            {/* pb-20 on mobile so not hidden by bottom navbar */}
+            <div className="absolute bottom-0 left-0 right-14 p-4 pb-20 md:pb-6">
+              <div className="flex items-center gap-2 mb-2">
+                <img
+                  src={reel.user?.profilePic || `https://ui-avatars.com/api/?name=${reel.user?.username || "U"}&background=6366f1&color=fff&size=40`}
+                  className="w-9 h-9 rounded-full object-cover border-2 border-white flex-shrink-0"
+                  alt=""
+                />
+                <p className="text-white text-sm font-semibold drop-shadow">{reel.user?.username}</p>
               </div>
+              {reel.caption && (
+                <p className="text-white/90 text-sm drop-shadow line-clamp-2 leading-snug">{reel.caption}</p>
+              )}
+            </div>
 
-              {/* Action buttons right */}
-              <div className="absolute right-3 bottom-24 md:bottom-10 flex flex-col items-center gap-5">
-                <button className="flex flex-col items-center gap-1 text-white">
-                  <div className="w-10 h-10 flex items-center justify-center"><FiHeart size={26} /></div>
-                  <span className="text-xs">Like</span>
-                </button>
-                <button className="flex flex-col items-center gap-1 text-white">
-                  <div className="w-10 h-10 flex items-center justify-center"><FiMessageCircle size={26} /></div>
-                  <span className="text-xs">Comment</span>
-                </button>
-                <button className="flex flex-col items-center gap-1 text-white">
-                  <div className="w-10 h-10 flex items-center justify-center"><FiSend size={26} /></div>
-                  <span className="text-xs">Share</span>
-                </button>
-                <button onClick={() => setMuted(!muted)} className="text-white">
-                  <div className="w-10 h-10 flex items-center justify-center">
-                    {muted ? <FiVolumeX size={22} /> : <FiVolume2 size={22} />}
-                  </div>
-                </button>
-              </div>
+            {/* ── RIGHT SIDE: action buttons ── */}
+            {/* pb-20 on mobile so not hidden by bottom navbar */}
+            <div className="absolute right-3 bottom-0 pb-20 md:pb-6 flex flex-col items-center gap-5">
+              <button className="flex flex-col items-center gap-0.5 text-white">
+                <FiHeart size={26} />
+                <span className="text-[11px]">Like</span>
+              </button>
+              <button className="flex flex-col items-center gap-0.5 text-white">
+                <FiMessageCircle size={26} />
+                <span className="text-[11px]">Comment</span>
+              </button>
+              <button className="flex flex-col items-center gap-0.5 text-white">
+                <FiSend size={26} />
+                <span className="text-[11px]">Share</span>
+              </button>
+              <button onClick={() => setMuted(!muted)} className="text-white">
+                {muted ? <FiVolumeX size={24} /> : <FiVolume2 size={24} />}
+              </button>
             </div>
 
           </div>
