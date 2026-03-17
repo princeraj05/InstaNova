@@ -1,26 +1,22 @@
-import Conversation from "../models/Conversation.js"
+import User from "../models/User.js"
 
-// create conversation
-export const createConversation = async (req, res) => {
+export const searchUsers = async (req, res) => {
   try {
-    const newConv = new Conversation({
-      members: [req.body.senderId, req.body.receiverId]
-    })
 
-    const saved = await newConv.save()
-    res.json(saved)
-  } catch (err) {
-    res.status(500).json(err)
-  }
-}
+    // 🔥 support both query & username
+    const keyword = req.query.query || req.query.username || ""
 
-// get user conversations
-export const getConversations = async (req, res) => {
-  try {
-    const convs = await Conversation.find({
-      members: { $in: [req.params.userId] }
+    const users = await User.find({
+      username: {
+        $regex: keyword,
+        $options: "i"
+      }
     })
-    res.json(convs)
+    .select("-password")
+    .limit(10)
+
+    res.json(users)
+
   } catch (err) {
     res.status(500).json(err)
   }

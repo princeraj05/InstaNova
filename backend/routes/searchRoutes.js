@@ -1,5 +1,4 @@
 import express from "express"
-
 import { searchUsers } from "../controllers/searchController.js"
 
 const router = express.Router()
