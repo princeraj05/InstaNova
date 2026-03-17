@@ -1,9 +1,6 @@
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import Navbar from "../components/Navbar"
 import API from "../api/axios"
-import io from "socket.io-client"
-
-const socket = io(import.meta.env.VITE_SERVER_URL)
 
 export default function Messages(){
 
@@ -12,16 +9,9 @@ export default function Messages(){
   const [message,setMessage] = useState("")
   const [messages,setMessages] = useState([])
 
-  useEffect(()=>{
-    socket.emit("addUser", userId)
-
-    socket.on("getMessage",(data)=>{
-      setMessages(prev => [...prev, data])
-    })
-
-  },[userId])
-
   const sendMessage = async () => {
+
+    if(!message) return
 
     const newMsg = {
       conversationId:"test",
@@ -29,16 +19,15 @@ export default function Messages(){
       text:message
     }
 
-    await API.post("/api/messages", newMsg) // ✅ FIXED
+    try{
+      await API.post("/api/messages", newMsg)
 
-    socket.emit("sendMessage", {
-      senderId:userId,
-      receiverId:userId, // 🔥 TEMP FIX
-      text:message
-    })
+      setMessages(prev => [...prev,newMsg])
+      setMessage("")
 
-    setMessages(prev => [...prev,newMsg])
-    setMessage("")
+    }catch(err){
+      console.log(err)
+    }
   }
 
   return(
