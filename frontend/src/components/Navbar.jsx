@@ -1,19 +1,12 @@
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import {
-  FiHome,
-  FiSearch,
-  FiCompass,
-  FiHeart,
-  FiUser,
-  FiPlusSquare,
-  FiMenu,
-  FiLogOut
+  FiHome, FiSearch, FiCompass, FiHeart,
+  FiUser, FiPlusSquare, FiMenu, FiLogOut
 } from "react-icons/fi";
 import { MdOutlineVideoLibrary } from "react-icons/md";
 import { BsChatDots } from "react-icons/bs";
 
 export default function Navbar() {
-
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -23,97 +16,66 @@ export default function Navbar() {
     navigate("/");
   };
 
-  const linkClass = (path) =>
-    `flex items-center gap-3 hover:text-black ${
-      location.pathname === path ? "text-black font-semibold" : "text-gray-500"
-    }`;
+  const isActive = (path) => location.pathname === path;
+
+  const NavLink = ({ to, icon: Icon, label }) => (
+    <Link
+      to={to}
+      className={`flex items-center gap-3 text-base transition-colors rounded-lg px-3 py-2.5
+        ${isActive(to)
+          ? "text-gray-900 font-semibold bg-gray-100"
+          : "text-gray-500 hover:text-gray-900 hover:bg-gray-50"
+        }`}
+    >
+      <Icon size={20} />
+      <span>{label}</span>
+    </Link>
+  );
+
+  const MobileLink = ({ to, icon: Icon }) => (
+    <Link
+      to={to}
+      className={`flex items-center justify-center p-2 rounded-xl transition-colors
+        ${isActive(to) ? "text-indigo-600" : "text-gray-500"}`}
+    >
+      <Icon size={22} />
+    </Link>
+  );
 
   return (
     <>
-      {/* Desktop Sidebar */}
-      <div className="hidden md:flex flex-col justify-between w-64 h-screen fixed left-0 top-0 border-r bg-white p-6">
-
+      {/* ── DESKTOP SIDEBAR ── */}
+      <div className="hidden md:flex flex-col justify-between w-64 h-screen fixed left-0 top-0 border-r border-gray-100 bg-white px-4 py-6 z-30">
         <div>
-          <h1 className="text-2xl font-bold mb-10">Instagram</h1>
-
-          <div className="flex flex-col gap-6 text-lg">
-
-            <Link className={linkClass("/home")} to="/home">
-              <FiHome /> Home
-            </Link>
-
-            <Link className={linkClass("/reels")} to="/reels">
-              <MdOutlineVideoLibrary /> Reels
-            </Link>
-
-            <Link className={linkClass("/messages")} to="/messages">
-              <BsChatDots /> Messages
-            </Link>
-
-            <Link className={linkClass("/search")} to="/search">
-              <FiSearch /> Search
-            </Link>
-
-            <Link className={linkClass("/explore")} to="/explore">
-              <FiCompass /> Explore
-            </Link>
-
-            <Link className={linkClass("/notifications")} to="/notifications">
-              <FiHeart /> Notifications
-            </Link>
-
-            <Link className={linkClass("/create")} to="/create">
-              <FiPlusSquare /> Create
-            </Link>
-
-            <Link className={linkClass("/profile")} to="/profile">
-              <FiUser /> Profile
-            </Link>
-
-            <Link className={linkClass("/more")} to="/more">
-              <FiMenu /> More
-            </Link>
-
-          </div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-8 px-3">Instagram</h1>
+          <nav className="flex flex-col gap-1">
+            <NavLink to="/home" icon={FiHome} label="Home" />
+            <NavLink to="/reels" icon={MdOutlineVideoLibrary} label="Reels" />
+            <NavLink to="/messages" icon={BsChatDots} label="Messages" />
+            <NavLink to="/search" icon={FiSearch} label="Search" />
+            <NavLink to="/explore" icon={FiCompass} label="Explore" />
+            <NavLink to="/notifications" icon={FiHeart} label="Notifications" />
+            <NavLink to="/create" icon={FiPlusSquare} label="Create" />
+            <NavLink to="/profile" icon={FiUser} label="Profile" />
+            <NavLink to="/more" icon={FiMenu} label="More" />
+          </nav>
         </div>
-
         <button
           onClick={handleLogout}
-          className="flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg"
+          className="flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white px-4 py-2.5 rounded-xl transition-colors text-sm font-medium"
         >
-          <FiLogOut /> Logout
+          <FiLogOut size={18} /> Logout
         </button>
-
       </div>
 
-      {/* Mobile Bottom Navbar */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t flex justify-around items-center py-3 text-xl z-50">
-
-        <Link to="/home">
-          <FiHome />
-        </Link>
-
-        <Link to="/search">
-          <FiSearch />
-        </Link>
-
-        {/* ✅ NEW: Messages added */}
-        <Link to="/messages">
-          <BsChatDots />
-        </Link>
-
-        <Link to="/create">
-          <FiPlusSquare />
-        </Link>
-
-        <Link to="/reels">
-          <MdOutlineVideoLibrary />
-        </Link>
-
-        <Link to="/profile">
-          <FiUser />
-        </Link>
-
+      {/* ── MOBILE BOTTOM NAVBAR ── */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 flex justify-around items-center px-2 py-2 z-50 safe-area-pb">
+        <MobileLink to="/home" icon={FiHome} />
+        <MobileLink to="/search" icon={FiSearch} />
+        <MobileLink to="/messages" icon={BsChatDots} />
+        <MobileLink to="/create" icon={FiPlusSquare} />
+        <MobileLink to="/reels" icon={MdOutlineVideoLibrary} />
+        <MobileLink to="/profile" icon={FiUser} />
       </div>
     </>
   );

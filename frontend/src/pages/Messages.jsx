@@ -38,19 +38,15 @@ export default function Messages() {
     const fetchConversations = async () => {
       try {
         const res = await API.get(`/conversations/${userId}`)
-
-        // FIX 1: Remove duplicate friendIds
         const seen = new Set()
         const unique = []
         for (const conv of res.data) {
           const friendId = conv.members.find(id => id !== userId)
-          // FIX 2: Skip undefined friendId (causes /user/undefined 500 error)
           if (!friendId || seen.has(friendId)) continue
           seen.add(friendId)
           unique.push(conv)
         }
         setConversations(unique)
-
         const userMap = {}
         await Promise.all(
           unique.map(async (conv) => {
@@ -66,9 +62,7 @@ export default function Messages() {
           })
         )
         setConversationUsers(userMap)
-      } catch (err) {
-        console.log(err)
-      }
+      } catch (err) { console.log(err) }
     }
     fetchConversations()
   }, [])
@@ -123,223 +117,194 @@ export default function Messages() {
   }
 
   return (
-    <>
-      <style>{`
-        .msgs-wrapper { display: flex; width: 100%; height: 100%; overflow: hidden; position: relative; }
-        .left-panel {
-          width: 320px; min-width: 260px; flex-shrink: 0;
-          display: flex; flex-direction: column;
-          background: #fff; border-right: 1px solid #f0f0f0;
-          box-shadow: 2px 0 8px rgba(0,0,0,0.06);
-          transition: transform 0.3s ease;
-        }
-        .right-panel {
-          flex: 1; display: flex; flex-direction: column; overflow: hidden;
-          transition: transform 0.3s ease;
-        }
-        .back-btn { display: none !important; }
+    <div className="flex bg-gray-100 min-h-screen">
+      <Navbar />
 
-        @media (max-width: 768px) {
-          .left-panel {
-            position: absolute; inset: 0; z-index: 10; width: 100%; min-width: unset;
-          }
-          .left-panel.mobile-hide { transform: translateX(-100%); }
-          .right-panel {
-            position: absolute; inset: 0; z-index: 20;
-            transform: translateX(100%);
-          }
-          .right-panel.mobile-show { transform: translateX(0); }
-          .back-btn { display: flex !important; }
-        }
-      `}</style>
+      {/* Main area: on desktop offset by sidebar width, on mobile full width */}
+      {/* pb-16 on mobile so content doesn't hide behind bottom navbar */}
+      <div className="flex-1 md:ml-64 h-screen overflow-hidden relative">
 
-      <div className="flex min-h-screen" style={{ background: "#f0f2f5" }}>
-        <Navbar />
-        <div className="w-full md:ml-64" style={{ height: "100vh", overflow: "hidden" }}>
-          <div className="msgs-wrapper">
+        <div className="flex h-full relative overflow-hidden">
 
-            {/* LEFT PANEL */}
-            <div className={`left-panel${showChat ? " mobile-hide" : ""}`}>
-              <div style={{ padding: "20px 16px 12px", borderBottom: "1px solid #f0f0f0" }}>
-                <h2 style={{ fontSize: "20px", fontWeight: "700", color: "#0f0f0f", marginBottom: "12px" }}>Messages</h2>
-                <div style={{ position: "relative" }}>
-                  <svg style={{ position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}
-                    width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                    <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
-                  </svg>
-                  <input
-                    placeholder="Search users..."
-                    value={search}
-                    onChange={handleSearch}
-                    style={{
-                      width: "100%", padding: "9px 12px 9px 34px",
-                      border: "none", borderRadius: "20px", background: "#f3f4f6",
-                      fontSize: "14px", outline: "none", boxSizing: "border-box"
-                    }}
-                  />
-                </div>
-              </div>
-
-              <div style={{ flex: 1, overflowY: "auto" }}>
-                {users.length > 0 && (
-                  <div style={{ padding: "8px 0" }}>
-                    <p style={{ fontSize: "11px", fontWeight: "600", color: "#9ca3af", padding: "4px 16px 6px", textTransform: "uppercase", letterSpacing: "0.5px" }}>
-                      Search Results
-                    </p>
-                    {users.map(u => (
-                      <div key={u._id} onClick={() => selectUser(u)}
-                        style={{ display: "flex", alignItems: "center", gap: "10px", padding: "10px 16px", cursor: "pointer" }}
-                        onMouseEnter={e => e.currentTarget.style.background = "#f9fafb"}
-                        onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
-                        <img src={getAvatar(u)} alt={u.username}
-                          style={{ width: "40px", height: "40px", borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
-                        <p style={{ fontSize: "14px", fontWeight: "600", color: "#111827" }}>{u.username}</p>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {search === "" && (
-                  <div style={{ padding: "8px 0" }}>
-                    {conversations.length > 0 && (
-                      <p style={{ fontSize: "11px", fontWeight: "600", color: "#9ca3af", padding: "4px 16px 6px", textTransform: "uppercase", letterSpacing: "0.5px" }}>
-                        Recent Chats
-                      </p>
-                    )}
-                    {conversations.map(c => {
-                      const friendId = c.members.find(id => id !== userId)
-                      const friend = conversationUsers[friendId]
-                      const isActive = conversation?._id === c._id
-                      return (
-                        <div key={c._id} onClick={() => openConversation(c)}
-                          style={{
-                            display: "flex", alignItems: "center", gap: "10px",
-                            padding: "10px 16px", cursor: "pointer", transition: "background 0.15s",
-                            background: isActive ? "#eef2ff" : "transparent",
-                            borderLeft: isActive ? "3px solid #6366f1" : "3px solid transparent"
-                          }}
-                          onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = "#f9fafb" }}
-                          onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = "transparent" }}>
-                          <img src={getAvatar(friend)} alt={friend?.username || "User"}
-                            style={{ width: "44px", height: "44px", borderRadius: "50%", objectFit: "cover", flexShrink: 0, border: "2px solid #e5e7eb" }} />
-                          <div style={{ overflow: "hidden" }}>
-                            <p style={{ fontSize: "14px", fontWeight: "600", color: "#111827", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                              {friend?.username || "..."}
-                            </p>
-                            <p style={{ fontSize: "12px", color: "#9ca3af" }}>Tap to open chat</p>
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                )}
+          {/* ── LEFT PANEL ── */}
+          <div
+            className={`
+              flex flex-col bg-white border-r border-gray-100 shadow-sm
+              transition-transform duration-300 ease-in-out
+              md:static md:translate-x-0 md:w-80 md:min-w-[260px]
+              absolute inset-0 z-10 w-full
+              ${showChat ? "-translate-x-full" : "translate-x-0"}
+            `}
+          >
+            {/* Header */}
+            <div className="px-4 pt-5 pb-3 border-b border-gray-100">
+              <h2 className="text-xl font-bold text-gray-900 mb-3">Messages</h2>
+              <div className="relative">
+                <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                  width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
+                </svg>
+                <input
+                  placeholder="Search users..."
+                  value={search}
+                  onChange={handleSearch}
+                  className="w-full pl-9 pr-3 py-2 bg-gray-100 rounded-full text-sm outline-none focus:ring-2 focus:ring-indigo-300 transition"
+                />
               </div>
             </div>
 
-            {/* RIGHT PANEL */}
-            <div className={`right-panel${showChat ? " mobile-show" : ""}`}>
-              {selectedUser ? (
-                <>
-                  <div style={{
-                    display: "flex", alignItems: "center", gap: "12px",
-                    padding: "12px 16px", background: "#ffffff",
-                    borderBottom: "1px solid #f0f0f0", boxShadow: "0 2px 6px rgba(0,0,0,0.04)"
-                  }}>
-                    <button className="back-btn" onClick={() => setShowChat(false)}
-                      style={{ background: "none", border: "none", cursor: "pointer", padding: "4px", alignItems: "center", color: "#6366f1" }}>
-                      <svg width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                        <path d="M19 12H5M5 12l7-7M5 12l7 7" />
-                      </svg>
-                    </button>
-                    <div style={{ position: "relative" }}>
-                      <img src={getAvatar(selectedUser)} alt={selectedUser.username}
-                        style={{ width: "42px", height: "42px", borderRadius: "50%", objectFit: "cover", border: "2px solid #e5e7eb" }} />
-                      <span style={{ position: "absolute", bottom: "1px", right: "1px", width: "10px", height: "10px", borderRadius: "50%", background: "#22c55e", border: "2px solid white" }} />
+            {/* List */}
+            {/* pb-16 so last item not hidden by mobile bottom navbar */}
+            <div className="flex-1 overflow-y-auto pb-16 md:pb-0">
+              {users.length > 0 && (
+                <div className="py-2">
+                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide px-4 py-1">Search Results</p>
+                  {users.map(u => (
+                    <div key={u._id} onClick={() => selectUser(u)}
+                      className="flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-gray-50 transition">
+                      <img src={getAvatar(u)} alt={u.username}
+                        className="w-10 h-10 rounded-full object-cover flex-shrink-0" />
+                      <p className="text-sm font-semibold text-gray-800">{u.username}</p>
                     </div>
-                    <div>
-                      <p style={{ fontSize: "15px", fontWeight: "700", color: "#111827" }}>{selectedUser.username}</p>
-                      <p style={{ fontSize: "12px", color: "#22c55e", fontWeight: "500" }}>Online</p>
-                    </div>
-                  </div>
+                  ))}
+                </div>
+              )}
 
-                  <div style={{ flex: 1, overflowY: "auto", padding: "16px", display: "flex", flexDirection: "column", gap: "4px", background: "#f8f9fa" }}>
-                    {messages.map((m, i) => {
-                      const isMine = m.sender === userId
-                      return (
-                        <div key={i} style={{ display: "flex", justifyContent: isMine ? "flex-end" : "flex-start", alignItems: "flex-end", gap: "8px", marginBottom: "4px" }}>
-                          {!isMine && (
-                            <img src={getAvatar(selectedUser)} alt={selectedUser.username}
-                              style={{ width: "28px", height: "28px", borderRadius: "50%", objectFit: "cover", flexShrink: 0, border: "1px solid #e5e7eb" }} />
-                          )}
-                          <div style={{ maxWidth: "65%" }}>
-                            {!isMine && (
-                              <p style={{ fontSize: "11px", color: "#9ca3af", marginBottom: "3px", paddingLeft: "2px", fontWeight: "500" }}>
-                                {selectedUser.username}
-                              </p>
-                            )}
-                            <div style={{
-                              padding: "10px 14px",
-                              borderRadius: isMine ? "18px 18px 4px 18px" : "18px 18px 18px 4px",
-                              background: isMine ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : "#ffffff",
-                              color: isMine ? "#ffffff" : "#111827",
-                              fontSize: "14px", lineHeight: "1.4",
-                              boxShadow: isMine ? "0 2px 8px rgba(99,102,241,0.3)" : "0 1px 4px rgba(0,0,0,0.08)"
-                            }}>
-                              {m.text}
-                            </div>
-                          </div>
-                          {isMine && <div style={{ width: "28px", flexShrink: 0 }} />}
+              {search === "" && (
+                <div className="py-2">
+                  {conversations.length > 0 && (
+                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide px-4 py-1">Recent Chats</p>
+                  )}
+                  {conversations.map(c => {
+                    const friendId = c.members.find(id => id !== userId)
+                    const friend = conversationUsers[friendId]
+                    const isActive = conversation?._id === c._id
+                    return (
+                      <div key={c._id} onClick={() => openConversation(c)}
+                        className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer transition border-l-[3px]
+                          ${isActive ? "bg-indigo-50 border-indigo-500" : "border-transparent hover:bg-gray-50"}`}>
+                        <img src={getAvatar(friend)} alt={friend?.username || "User"}
+                          className="w-11 h-11 rounded-full object-cover flex-shrink-0 border-2 border-gray-200" />
+                        <div className="overflow-hidden">
+                          <p className="text-sm font-semibold text-gray-800 truncate">{friend?.username || "..."}</p>
+                          <p className="text-xs text-gray-400">Tap to open chat</p>
                         </div>
-                      )
-                    })}
-                    <div ref={messagesEndRef} />
-                  </div>
-
-                  <div style={{ padding: "12px 16px", background: "#ffffff", borderTop: "1px solid #f0f0f0", display: "flex", alignItems: "center", gap: "10px" }}>
-                    <input
-                      value={message}
-                      onChange={e => setMessage(e.target.value)}
-                      onKeyDown={handleKeyDown}
-                      placeholder={`Message ${selectedUser.username}...`}
-                      style={{
-                        flex: 1, padding: "11px 16px", border: "1px solid #e5e7eb",
-                        borderRadius: "24px", fontSize: "14px", outline: "none", background: "#f9fafb"
-                      }}
-                      onFocus={e => e.target.style.borderColor = "#6366f1"}
-                      onBlur={e => e.target.style.borderColor = "#e5e7eb"}
-                    />
-                    <button onClick={sendMessage} disabled={!message.trim()}
-                      style={{
-                        width: "44px", height: "44px", borderRadius: "50%", border: "none",
-                        background: message.trim() ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : "#e5e7eb",
-                        color: "white", cursor: message.trim() ? "pointer" : "not-allowed",
-                        display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
-                        boxShadow: message.trim() ? "0 2px 8px rgba(99,102,241,0.4)" : "none"
-                      }}>
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                        <line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" />
-                      </svg>
-                    </button>
-                  </div>
-                </>
-              ) : (
-                <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "#f8f9fa", gap: "16px" }}>
-                  <div style={{ width: "80px", height: "80px", borderRadius: "50%", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 8px 24px rgba(99,102,241,0.3)" }}>
-                    <svg width="36" height="36" fill="none" stroke="white" strokeWidth="1.8" viewBox="0 0 24 24">
-                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                    </svg>
-                  </div>
-                  <div style={{ textAlign: "center" }}>
-                    <p style={{ fontSize: "18px", fontWeight: "700", color: "#111827" }}>Your Messages</p>
-                    <p style={{ fontSize: "14px", color: "#9ca3af", marginTop: "6px" }}>Search a user or select a chat to begin</p>
-                  </div>
+                      </div>
+                    )
+                  })}
                 </div>
               )}
             </div>
-
           </div>
+
+          {/* ── RIGHT PANEL ── */}
+          <div
+            className={`
+              flex flex-col flex-1 overflow-hidden
+              transition-transform duration-300 ease-in-out
+              md:static md:translate-x-0
+              absolute inset-0 z-20
+              ${showChat ? "translate-x-0" : "translate-x-full"}
+            `}
+          >
+            {selectedUser ? (
+              <>
+                {/* Chat Header */}
+                <div className="flex items-center gap-3 px-4 py-3 bg-white border-b border-gray-100 shadow-sm flex-shrink-0">
+                  {/* Back button - only on mobile */}
+                  <button
+                    onClick={() => setShowChat(false)}
+                    className="md:hidden text-indigo-500 p-1 flex items-center"
+                  >
+                    <svg width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                      <path d="M19 12H5M5 12l7-7M5 12l7 7" />
+                    </svg>
+                  </button>
+                  <div className="relative">
+                    <img src={getAvatar(selectedUser)} alt={selectedUser.username}
+                      className="w-10 h-10 rounded-full object-cover border-2 border-gray-200" />
+                    <span className="absolute bottom-0.5 right-0.5 w-2.5 h-2.5 bg-green-400 rounded-full border-2 border-white" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-gray-900">{selectedUser.username}</p>
+                    <p className="text-xs text-green-500 font-medium">Online</p>
+                  </div>
+                </div>
+
+                {/* Messages */}
+                {/* pb-16 on mobile so input doesn't hide behind bottom navbar */}
+                <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-1 bg-gray-50 pb-16 md:pb-4">
+                  {messages.map((m, i) => {
+                    const isMine = m.sender === userId
+                    return (
+                      <div key={i}
+                        className={`flex items-end gap-2 mb-1 ${isMine ? "justify-end" : "justify-start"}`}>
+                        {!isMine && (
+                          <img src={getAvatar(selectedUser)} alt={selectedUser.username}
+                            className="w-7 h-7 rounded-full object-cover flex-shrink-0 border border-gray-200" />
+                        )}
+                        <div className="max-w-[65%]">
+                          {!isMine && (
+                            <p className="text-[11px] text-gray-400 font-medium mb-0.5 pl-0.5">{selectedUser.username}</p>
+                          )}
+                          <div className={`px-3.5 py-2.5 text-sm leading-snug
+                            ${isMine
+                              ? "bg-gradient-to-br from-indigo-500 to-purple-500 text-white rounded-[18px_18px_4px_18px] shadow-md shadow-indigo-200"
+                              : "bg-white text-gray-800 rounded-[18px_18px_18px_4px] shadow-sm"
+                            }`}>
+                            {m.text}
+                          </div>
+                        </div>
+                        {isMine && <div className="w-7 flex-shrink-0" />}
+                      </div>
+                    )
+                  })}
+                  <div ref={messagesEndRef} />
+                </div>
+
+                {/* Input — fixed above mobile bottom navbar */}
+                <div className="flex items-center gap-2 px-4 py-3 bg-white border-t border-gray-100 flex-shrink-0 mb-16 md:mb-0">
+                  <input
+                    value={message}
+                    onChange={e => setMessage(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    placeholder={`Message ${selectedUser.username}...`}
+                    className="flex-1 px-4 py-2.5 border border-gray-200 rounded-full text-sm outline-none bg-gray-50
+                      focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition"
+                  />
+                  <button
+                    onClick={sendMessage}
+                    disabled={!message.trim()}
+                    className={`w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 transition
+                      ${message.trim()
+                        ? "bg-gradient-to-br from-indigo-500 to-purple-500 shadow-lg shadow-indigo-200 cursor-pointer"
+                        : "bg-gray-200 cursor-not-allowed"
+                      }`}
+                  >
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
+                      <line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" />
+                    </svg>
+                  </button>
+                </div>
+              </>
+            ) : (
+              /* Empty state */
+              <div className="flex-1 flex flex-col items-center justify-center bg-gray-50 gap-4">
+                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center shadow-xl shadow-indigo-200">
+                  <svg width="34" height="34" fill="none" stroke="white" strokeWidth="1.8" viewBox="0 0 24 24">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                  </svg>
+                </div>
+                <div className="text-center">
+                  <p className="text-lg font-bold text-gray-900">Your Messages</p>
+                  <p className="text-sm text-gray-400 mt-1">Search a user or select a chat to begin</p>
+                </div>
+              </div>
+            )}
+          </div>
+
         </div>
       </div>
-    </>
+    </div>
   )
 }
