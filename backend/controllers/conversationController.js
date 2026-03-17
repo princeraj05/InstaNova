@@ -34,3 +34,19 @@ export const createConversation = async (req, res) => {
     res.status(500).json({ message: "Conversation failed" })
   }
 }
+
+
+// 🔥 ADD THIS (ONLY NEW CODE)
+export const getConversations = async (req, res) => {
+  try {
+
+    const conversations = await Conversation.find({
+      members: { $in: [req.params.userId] }
+    })
+
+    res.json(conversations)
+
+  } catch (err) {
+    res.status(500).json(err)
+  }
+}
