@@ -31,11 +31,17 @@ export default function Reels() {
     return () => { videoRefs.current.forEach(v => { if (v) observer.unobserve(v) }) }
   }, [reels])
 
+  // ✅ Avatar: use profilePic if available, else ui-avatars with username initial
+  const getAvatar = (user) => {
+    if (user?.profilePic && user.profilePic.trim() !== "") return user.profilePic
+    return `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.username || "U")}&background=6366f1&color=fff&size=80`
+  }
+
   return (
     <div className="flex bg-black min-h-screen">
       <Navbar />
 
-      {/* ── SCROLL CONTAINER ── */}
+      {/* Scroll container */}
       <div
         className="md:ml-64 flex-1 overflow-y-scroll snap-y snap-mandatory"
         style={{ height: "100dvh", scrollbarWidth: "none", msOverflowStyle: "none" }}
@@ -47,7 +53,7 @@ export default function Reels() {
             style={{ height: "100dvh" }}
           >
 
-            {/* ── MOBILE: fullscreen cover ── */}
+            {/* ── MOBILE: fullscreen ── */}
             <div className="relative w-full h-full md:hidden">
               <video
                 ref={el => videoRefs.current[index] = el}
@@ -55,20 +61,15 @@ export default function Reels() {
                 className="absolute inset-0 w-full h-full object-cover"
                 loop muted={muted} playsInline
               />
-
-              {/* gradient */}
               <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/5 to-transparent pointer-events-none" />
 
               {/* bottom left: avatar + username + caption */}
               <div className="absolute bottom-0 left-0 right-14 px-4 pb-24">
                 <div className="flex items-center gap-2 mb-1.5">
                   <img
-                    src={reel.user?.profilePic
-                      ? reel.user.profilePic
-                      : `https://ui-avatars.com/api/?name=${encodeURIComponent(reel.user?.username || "U")}&background=6366f1&color=fff&size=40`
-                    }
+                    src={getAvatar(reel.user)}
                     className="w-9 h-9 rounded-full object-cover border-2 border-white flex-shrink-0"
-                    alt=""
+                    alt={reel.user?.username}
                   />
                   <p className="text-white text-sm font-semibold drop-shadow">{reel.user?.username}</p>
                 </div>
@@ -77,7 +78,7 @@ export default function Reels() {
                 )}
               </div>
 
-              {/* right action buttons */}
+              {/* right actions */}
               <div className="absolute right-3 bottom-0 pb-24 flex flex-col items-center gap-5">
                 <button className="flex flex-col items-center gap-0.5 text-white">
                   <FiHeart size={26} /><span className="text-[11px]">Like</span>
@@ -94,12 +95,12 @@ export default function Reels() {
               </div>
             </div>
 
-            {/* ── DESKTOP: Instagram-style centered 9:16 with right sidebar ── */}
-            <div className="hidden md:flex w-full h-full items-center justify-center gap-4 px-8">
+            {/* ── DESKTOP: Instagram-style 9:16 centered ── */}
+            <div className="hidden md:flex w-full h-full items-center justify-center gap-6">
 
-              {/* 9:16 video box */}
+              {/* 9:16 video */}
               <div
-                className="relative bg-black rounded-xl overflow-hidden flex-shrink-0"
+                className="relative bg-black rounded-2xl overflow-hidden flex-shrink-0"
                 style={{ height: "min(90dvh, 720px)", aspectRatio: "9/16" }}
               >
                 <video
@@ -108,65 +109,51 @@ export default function Reels() {
                   className="w-full h-full object-cover"
                   loop muted={muted} playsInline
                 />
-                {/* gradient overlay */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent pointer-events-none" />
 
-                {/* bottom left info */}
+                {/* bottom info inside video */}
                 <div className="absolute bottom-4 left-4 right-4">
                   <div className="flex items-center gap-2 mb-1.5">
+                    {/* ✅ actual profile photo */}
                     <img
-                      src={reel.user?.profilePic
-                        ? reel.user.profilePic
-                        : `https://ui-avatars.com/api/?name=${encodeURIComponent(reel.user?.username || "U")}&background=6366f1&color=fff&size=40`
-                      }
+                      src={getAvatar(reel.user)}
                       className="w-9 h-9 rounded-full object-cover border-2 border-white flex-shrink-0"
-                      alt=""
+                      alt={reel.user?.username}
                     />
                     <p className="text-white text-sm font-semibold">{reel.user?.username}</p>
-                    <button className="ml-2 px-3 py-0.5 border border-white/70 text-white text-xs rounded-full hover:bg-white/20 transition">
+                    <button className="ml-1 px-3 py-0.5 border border-white/70 text-white text-xs rounded-full hover:bg-white/20 transition">
                       Follow
                     </button>
                   </div>
                   {reel.caption && (
-                    <p className="text-white/90 text-sm line-clamp-2 leading-snug">{reel.caption}</p>
+                    <p className="text-white/85 text-sm line-clamp-2 leading-snug">{reel.caption}</p>
                   )}
                 </div>
 
-                {/* mute button inside video */}
+                {/* mute inside video top-right */}
                 <button
                   onClick={() => setMuted(!muted)}
                   className="absolute top-3 right-3 w-8 h-8 bg-black/40 rounded-full flex items-center justify-center text-white hover:bg-black/60 transition"
                 >
-                  {muted ? <FiVolumeX size={16} /> : <FiVolume2 size={16} />}
+                  {muted ? <FiVolumeX size={15} /> : <FiVolume2 size={15} />}
                 </button>
               </div>
 
-              {/* right action sidebar — Instagram style */}
+              {/* right action buttons */}
               <div className="flex flex-col items-center gap-6">
-                <button className="flex flex-col items-center gap-1 text-white hover:text-red-400 transition">
-                  <div className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition">
-                    <FiHeart size={20} />
-                  </div>
-                  <span className="text-xs text-white/70">Like</span>
-                </button>
-                <button className="flex flex-col items-center gap-1 text-white hover:text-indigo-400 transition">
-                  <div className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition">
-                    <FiMessageCircle size={20} />
-                  </div>
-                  <span className="text-xs text-white/70">Comment</span>
-                </button>
-                <button className="flex flex-col items-center gap-1 text-white hover:text-indigo-400 transition">
-                  <div className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition">
-                    <FiSend size={20} />
-                  </div>
-                  <span className="text-xs text-white/70">Share</span>
-                </button>
-                <button className="flex flex-col items-center gap-1 text-white hover:text-indigo-400 transition">
-                  <div className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition">
-                    <FiBookmark size={20} />
-                  </div>
-                  <span className="text-xs text-white/70">Save</span>
-                </button>
+                {[
+                  { icon: <FiHeart size={22} />, label: "Like" },
+                  { icon: <FiMessageCircle size={22} />, label: "Comment" },
+                  { icon: <FiSend size={22} />, label: "Share" },
+                  { icon: <FiBookmark size={22} />, label: "Save" },
+                ].map(({ icon, label }) => (
+                  <button key={label} className="flex flex-col items-center gap-1 text-white hover:text-indigo-300 transition">
+                    <div className="w-11 h-11 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition">
+                      {icon}
+                    </div>
+                    <span className="text-xs text-white/70">{label}</span>
+                  </button>
+                ))}
               </div>
 
             </div>
