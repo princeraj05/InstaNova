@@ -3,139 +3,131 @@ import Navbar from "../components/Navbar"
 import API from "../api/axios"
 import { useNavigate } from "react-router-dom"
 
-const SERVER_URL = import.meta.env.VITE_SERVER_URL
-
 export default function Search(){
 
-const [query,setQuery] = useState("")
-const [users,setUsers] = useState([])
+  const [query,setQuery] = useState("")
+  const [users,setUsers] = useState([])
 
-const navigate = useNavigate()
-const currentUserId = localStorage.getItem("userId")
+  const navigate = useNavigate()
+  const currentUserId = localStorage.getItem("userId")
 
-const handleSearch = async(e)=>{
+  const handleSearch = async(e)=>{
 
-const value = e.target.value
-setQuery(value)
+    const value = e.target.value
+    setQuery(value)
 
-if(value.length > 0){
+    if(value.length > 0){
 
-try{
+      try{
+        const res = await API.get(`/search?username=${value}`)
+        setUsers(res.data || [])
+      }catch(err){
+        console.log(err)
+        setUsers([])
+      }
 
-const res = await API.get(`/search?username=${value}`)
-setUsers(res.data || [])
+    }else{
+      setUsers([])
+    }
 
-}catch(err){
-console.log(err)
-setUsers([])
-}
+  }
 
-}else{
-setUsers([])
-}
+  const followUser = async(id)=>{
 
-}
+    try{
 
-const followUser = async(id)=>{
+      const res = await API.put(`/user/follow/${id}`,{
+        currentUserId
+      })
 
-try{
+      alert(res.data.message || "Success")
+      setUsers(users.filter(u => u._id !== id))
 
-const res = await API.put(`/user/follow/${id}`,{
-currentUserId
-})
+    }catch(err){
+      console.log(err)
+      alert("Follow failed")
+    }
 
-alert(res.data.message || "Success")
+  }
 
-// optional: user list update
-setUsers(users.filter(u => u._id !== id))
+  const openProfile = (id)=>{
+    navigate(`/user/${id}`)
+  }
 
-}catch(err){
+  return(
 
-console.log(err)
-alert("Follow failed")
+    <div className="flex min-h-screen bg-gray-100">
 
-}
+      <Navbar/>
 
-}
+      <div className="w-full md:ml-64 flex justify-center">
 
-const openProfile = (id)=>{
-navigate(`/user/${id}`)
-}
+        <div className="w-full max-w-md p-6">
 
-return(
+          <h2 className="text-2xl font-bold mb-6">
+            Search Users
+          </h2>
 
-<div className="flex min-h-screen bg-gray-100">
+          <input
+            placeholder="Search username..."
+            value={query}
+            onChange={handleSearch}
+            className="w-full border p-3 rounded-lg"
+          />
 
-<Navbar/>
+          <div className="mt-6 space-y-4">
 
-<div className="w-full md:ml-64 flex justify-center">
+            {users.length === 0 && query.length > 0 && (
+              <p className="text-gray-500 text-sm">
+                No users found
+              </p>
+            )}
 
-<div className="w-full max-w-md p-6">
+            {users.map((user)=>(
 
-<h2 className="text-2xl font-bold mb-6">
-Search Users
-</h2>
+              <div
+                key={user._id}
+                className="flex items-center justify-between bg-white p-3 rounded-lg shadow"
+              >
 
-<input
-placeholder="Search username..."
-value={query}
-onChange={handleSearch}
-className="w-full border p-3 rounded-lg"
-/>
+                <div
+                  onClick={()=>openProfile(user._id)}
+                  className="flex items-center gap-3 cursor-pointer"
+                >
 
-<div className="mt-6 space-y-4">
+                  <img
+                    src={
+                      user.profilePic
+                      ? user.profilePic   // ✅ FIXED
+                      : "https://i.pravatar.cc/150"
+                    }
+                    className="w-10 h-10 rounded-full object-cover"
+                  />
 
-{users.length === 0 && query.length > 0 && (
-<p className="text-gray-500 text-sm">
-No users found
-</p>
-)}
+                  <span className="font-medium">
+                    {user.username}
+                  </span>
 
-{users.map((user)=>(
+                </div>
 
-<div
-key={user._id}
-className="flex items-center justify-between bg-white p-3 rounded-lg shadow"
->
+                <button
+                  onClick={()=>followUser(user._id)}
+                  className="bg-blue-500 text-white px-3 py-1 rounded-md hover:bg-blue-600"
+                >
+                  Follow
+                </button>
 
-<div
-onClick={()=>openProfile(user._id)}
-className="flex items-center gap-3 cursor-pointer"
->
+              </div>
 
-<img
-src={
-user.profilePic
-? `${SERVER_URL}/uploads/${user.profilePic}`
-: "https://i.pravatar.cc/150"
-}
-className="w-10 h-10 rounded-full object-cover"
-/>
+            ))}
 
-<span className="font-medium">
-{user.username}
-</span>
+          </div>
 
-</div>
+        </div>
 
-<button
-onClick={()=>followUser(user._id)}
-className="bg-blue-500 text-white px-3 py-1 rounded-md hover:bg-blue-600"
->
-Follow
-</button>
+      </div>
 
-</div>
+    </div>
 
-))}
-
-</div>
-
-</div>
-
-</div>
-
-</div>
-
-)
+  )
 }

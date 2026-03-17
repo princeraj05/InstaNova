@@ -2,103 +2,93 @@ import { useEffect, useState, useRef } from "react"
 import Navbar from "../components/Navbar"
 import API from "../api/axios"
 
-const SERVER_URL = import.meta.env.VITE_SERVER_URL
-
 export default function Reels() {
 
-const [reels,setReels] = useState([])
-const videoRefs = useRef([])
+  const [reels,setReels] = useState([])
+  const videoRefs = useRef([])
 
-useEffect(()=>{
+  useEffect(()=>{
 
-const fetchReels = async()=>{
+    const fetchReels = async()=>{
+      try{
+        const res = await API.get("/reels")
+        setReels(res.data)
+      }catch(err){
+        console.log(err)
+      }
+    }
 
-try{
-const res = await API.get("/reels")
-setReels(res.data)
-}catch(err){
-console.log(err)
-}
+    fetchReels()
 
-}
+  },[])
 
-fetchReels()
+  useEffect(()=>{
 
-},[])
+    const observer = new IntersectionObserver(
 
+      (entries)=>{
 
+        entries.forEach(entry=>{
 
-useEffect(()=>{
+          const video = entry.target
 
-const observer = new IntersectionObserver(
+          if(entry.isIntersecting){
+            video.play()
+          }else{
+            video.pause()
+          }
 
-(entries)=>{
+        })
 
-entries.forEach(entry=>{
+      },
 
-const video = entry.target
+      { threshold:0.8 }
 
-if(entry.isIntersecting){
-video.play()
-}else{
-video.pause()
-}
+    )
 
-})
+    videoRefs.current.forEach(video=>{
+      if(video) observer.observe(video)
+    })
 
-},
+    return ()=>{
+      videoRefs.current.forEach(video=>{
+        if(video) observer.unobserve(video)
+      })
+    }
 
-{
-threshold:0.8
-}
+  },[reels])
 
-)
+  return(
 
-videoRefs.current.forEach(video=>{
-if(video) observer.observe(video)
-})
+    <div className="flex">
 
-return ()=>{
-videoRefs.current.forEach(video=>{
-if(video) observer.unobserve(video)
-})
-}
+      <Navbar/>
 
-},[reels])
+      <div className="flex-1 md:ml-64 bg-black h-screen overflow-y-scroll snap-y snap-mandatory">
 
+        {reels.map((reel,index)=>(
 
+          <div
+            key={reel._id}
+            className="h-screen flex justify-center items-center snap-start"
+          >
 
-return(
+            <video
+              ref={el => videoRefs.current[index] = el}
+              src={reel.media}   // ✅ FIXED
+              className="h-[90vh] w-auto max-w-[420px] object-cover rounded-lg"
+              loop
+              controls
+            />
 
-<div className="flex">
+          </div>
 
-<Navbar/>
+        ))}
 
-<div className="flex-1 md:ml-64 bg-black h-screen overflow-y-scroll snap-y snap-mandatory">
+      </div>
 
-{reels.map((reel,index)=>(
+    </div>
 
-<div
-key={reel._id}
-className="h-screen flex justify-center items-center snap-start"
->
-
-<video
-ref={el => videoRefs.current[index] = el}
-src={`${SERVER_URL}/uploads/${reel.media}`}
-className="h-[90vh] w-auto max-w-[420px] object-cover rounded-lg"
-loop
-controls
-/>
-
-</div>
-
-))}
-
-</div>
-
-</div>
-
-)
+  )
 
 }

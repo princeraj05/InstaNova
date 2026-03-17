@@ -2,132 +2,125 @@ import { useState, useEffect } from "react"
 import API from "../api/axios"
 import { useNavigate } from "react-router-dom"
 
-const SERVER_URL = import.meta.env.VITE_SERVER_URL
-
 export default function EditProfile(){
 
-const userId = localStorage.getItem("userId")
-const navigate = useNavigate()
+  const userId = localStorage.getItem("userId")
+  const navigate = useNavigate()
 
-const [username,setUsername] = useState("")
-const [bio,setBio] = useState("")
-const [profilePic,setProfilePic] = useState(null)
-const [preview,setPreview] = useState("")
+  const [username,setUsername] = useState("")
+  const [bio,setBio] = useState("")
+  const [profilePic,setProfilePic] = useState(null)
+  const [preview,setPreview] = useState("")
 
-useEffect(()=>{
+  useEffect(()=>{
 
-const fetchUser = async()=>{
+    const fetchUser = async()=>{
 
-try{
+      try{
+        const res = await API.get(`/user/${userId}`)
 
-const res = await API.get(`/user/${userId}`)
+        setUsername(res.data.username || "")
+        setBio(res.data.bio || "")
+        setPreview(res.data.profilePic || "")
 
-setUsername(res.data.username || "")
-setBio(res.data.bio || "")
-setPreview(res.data.profilePic || "")
+      }catch(err){
+        console.log(err)
+      }
 
-}catch(err){
-console.log(err)
-}
+    }
 
-}
+    if(userId){
+      fetchUser()
+    }
 
-if(userId){
-fetchUser()
-}
-
-},[userId])
+  },[userId])
 
 
-const handleUpdate = async()=>{
+  const handleUpdate = async()=>{
 
-try{
+    try{
 
-const formData = new FormData()
+      const formData = new FormData()
 
-formData.append("username",username)
-formData.append("bio",bio)
+      formData.append("username",username)
+      formData.append("bio",bio)
 
-if(profilePic){
-formData.append("profilePic",profilePic)
-}
+      if(profilePic){
+        formData.append("profilePic",profilePic)
+      }
 
-await API.put(`/user/${userId}`,formData,{
-headers:{
-"Content-Type":"multipart/form-data"
-}
-})
+      await API.put(`/user/${userId}`,formData,{
+        headers:{
+          "Content-Type":"multipart/form-data"
+        }
+      })
 
-alert("Profile updated")
-navigate("/profile")
+      alert("Profile updated")
+      navigate("/profile")
 
-}catch(err){
+    }catch(err){
 
-console.log(err)
-alert("Update failed")
+      console.log(err)
+      alert("Update failed")
 
-}
+    }
 
-}
+  }
 
-return(
+  return(
 
-<div style={{padding:"40px"}}>
+    <div style={{padding:"40px"}}>
 
-<h2>Edit Profile</h2>
+      <h2>Edit Profile</h2>
 
-{preview && (
+      {preview && (
 
-<img
-src={
-preview.startsWith("http")
-? preview
-: `${SERVER_URL}/uploads/${preview}`
-}
-style={{
-width:"120px",
-height:"120px",
-borderRadius:"50%",
-objectFit:"cover",
-marginBottom:"20px"
-}}
-/>
+        <img
+          src={preview}   // ✅ FIXED (no uploads path)
+          style={{
+            width:"120px",
+            height:"120px",
+            borderRadius:"50%",
+            objectFit:"cover",
+            marginBottom:"20px"
+          }}
+        />
 
-)}
+      )}
 
-<br/>
+      <br/>
 
-<input
-value={username}
-onChange={(e)=>setUsername(e.target.value)}
-placeholder="username"
-/>
+      <input
+        value={username}
+        onChange={(e)=>setUsername(e.target.value)}
+        placeholder="username"
+      />
 
-<br/><br/>
+      <br/><br/>
 
-<input
-value={bio}
-onChange={(e)=>setBio(e.target.value)}
-placeholder="bio"
-/>
+      <input
+        value={bio}
+        onChange={(e)=>setBio(e.target.value)}
+        placeholder="bio"
+      />
 
-<br/><br/>
+      <br/><br/>
 
-<input
-type="file"
-onChange={(e)=>{
-setProfilePic(e.target.files[0])
-setPreview(URL.createObjectURL(e.target.files[0]))
-}}
-/>
+      <input
+        type="file"
+        onChange={(e)=>{
+          setProfilePic(e.target.files[0])
+          setPreview(URL.createObjectURL(e.target.files[0]))
+        }}
+      />
 
-<br/><br/>
+      <br/><br/>
 
-<button onClick={handleUpdate}>
-Update Profile
-</button>
+      <button onClick={handleUpdate}>
+        Update Profile
+      </button>
 
-</div>
+    </div>
 
-)
+  )
 }

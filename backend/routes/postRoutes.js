@@ -1,58 +1,17 @@
 import express from "express"
-import multer from "multer"
-import fs from "fs"
+import upload from "../middleware/upload.js"
 
 import { createPost, getUserPosts, getAllPosts } from "../controllers/postController.js"
 
 const router = express.Router()
 
-const uploadPath = "uploads"
-
-// ensure uploads folder exists
-if (!fs.existsSync(uploadPath)) {
-fs.mkdirSync(uploadPath, { recursive: true })
-}
-
-const storage = multer.diskStorage({
-
-destination: (req, file, cb) => {
-cb(null, uploadPath)
-},
-
-filename: (req, file, cb) => {
-const uniqueName = Date.now() + "-" + file.originalname
-cb(null, uniqueName)
-}
-
-})
-
-const fileFilter = (req, file, cb) => {
-
-const allowedTypes = [
-"image/jpeg",
-"image/png",
-"image/jpg",
-"video/mp4",
-"video/mov"
-]
-
-if (allowedTypes.includes(file.mimetype)) {
-cb(null, true)
-} else {
-cb(new Error("Only images and videos allowed"), false)
-}
-
-}
-
-const upload = multer({
-storage,
-fileFilter
-})
-
+// ✅ CREATE POST (Cloudinary upload)
 router.post("/create", upload.single("media"), createPost)
 
+// ✅ GET USER POSTS
 router.get("/user/:id", getUserPosts)
 
+// ✅ GET ALL POSTS (Feed)
 router.get("/", getAllPosts)
 
 export default router
