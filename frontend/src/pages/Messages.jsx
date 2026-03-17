@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Navbar from "../components/Navbar"
 import API from "../api/axios"
 
@@ -13,7 +13,7 @@ export default function Messages(){
   const [selectedUser,setSelectedUser] = useState(null)
   const [conversation,setConversation] = useState(null)
 
-  // 🔍 LIVE SEARCH (NO BUTTON)
+  // 🔍 LIVE SEARCH
   const handleSearch = async(e)=>{
     const value = e.target.value
     setSearch(value)
@@ -36,7 +36,6 @@ export default function Messages(){
     setSelectedUser(user)
 
     try{
-
       const res = await API.post("/conversations",{
         senderId:userId,
         receiverId:user._id
@@ -51,6 +50,23 @@ export default function Messages(){
       console.log(err)
     }
   }
+
+  // 🔄 AUTO REFRESH MESSAGES (🔥 MAIN FIX)
+  useEffect(()=>{
+    if(!conversation) return
+
+    const interval = setInterval(async ()=>{
+      try{
+        const res = await API.get(`/messages/${conversation._id}`)
+        setMessages(res.data)
+      }catch(err){
+        console.log(err)
+      }
+    }, 2000) // every 2 sec
+
+    return ()=>clearInterval(interval)
+
+  },[conversation])
 
   // 📩 SEND MESSAGE
   const sendMessage = async()=>{
