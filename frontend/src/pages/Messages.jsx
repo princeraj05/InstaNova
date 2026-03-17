@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import Navbar from "../components/Navbar"
 import API from "../api/axios"
+import { io } from "socket.io-client"
 
 export default function Messages(){
 
@@ -12,6 +13,25 @@ export default function Messages(){
   const [users,setUsers] = useState([])
   const [selectedUser,setSelectedUser] = useState(null)
   const [conversation,setConversation] = useState(null)
+
+  const socket = useRef()
+
+  // 🔥 CONNECT SOCKET
+  useEffect(()=>{
+    socket.current = io(import.meta.env.VITE_API_URL)
+
+    socket.current.on("newMessage",(data)=>{
+      // sirf current chat ke messages add karo
+      if(data.conversationId === conversation?._id){
+        setMessages(prev => [...prev, data])
+      }
+    })
+
+    return ()=>{
+      socket.current.disconnect()
+    }
+
+  },[conversation])
 
   // 🔍 LIVE SEARCH
   const handleSearch = async(e)=>{
@@ -51,23 +71,6 @@ export default function Messages(){
     }
   }
 
-  // 🔄 AUTO REFRESH MESSAGES (🔥 MAIN FIX)
-  useEffect(()=>{
-    if(!conversation) return
-
-    const interval = setInterval(async ()=>{
-      try{
-        const res = await API.get(`/messages/${conversation._id}`)
-        setMessages(res.data)
-      }catch(err){
-        console.log(err)
-      }
-    }, 2000) // every 2 sec
-
-    return ()=>clearInterval(interval)
-
-  },[conversation])
-
   // 📩 SEND MESSAGE
   const sendMessage = async()=>{
     if(!message || !conversation) return
@@ -81,7 +84,6 @@ export default function Messages(){
     try{
       await API.post("/messages", newMsg)
 
-      setMessages(prev => [...prev,newMsg])
       setMessage("")
 
     }catch(err){
