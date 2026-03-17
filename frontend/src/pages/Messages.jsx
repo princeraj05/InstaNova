@@ -16,7 +16,7 @@ export default function Messages(){
   // 🔍 search users
   const handleSearch = async () => {
     try{
-      const res = await API.get(`/api/search?query=${search}`)
+      const res = await API.get(`/search?query=${search}`) // ✅ FIXED
       setUsers(res.data)
     }catch(err){
       console.log(err)
@@ -28,16 +28,14 @@ export default function Messages(){
     setSelectedUser(user)
 
     try{
-      // create conversation
-      const res = await API.post("/api/conversations", {
+      const res = await API.post("/conversations", { // ✅ FIXED
         senderId: userId,
         receiverId: user._id
       })
 
       setConversation(res.data)
 
-      // get old messages
-      const msgs = await API.get(`/api/messages/${res.data._id}`)
+      const msgs = await API.get(`/messages/${res.data._id}`) // ✅ FIXED
       setMessages(msgs.data)
 
     }catch(err){
@@ -57,7 +55,7 @@ export default function Messages(){
     }
 
     try{
-      await API.post("/api/messages", newMsg)
+      await API.post("/messages", newMsg) // ✅ FIXED
 
       setMessages(prev => [...prev,newMsg])
       setMessage("")
