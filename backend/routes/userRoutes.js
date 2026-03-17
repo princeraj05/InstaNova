@@ -1,34 +1,20 @@
 import express from "express"
-import multer from "multer"
+import upload from "../middleware/upload.js"   // ✅ Cloudinary upload
 
 import {
-getProfile,
-updateProfile,
-followUser,
-unfollowUser
+  getProfile,
+  updateProfile,
+  followUser,
+  unfollowUser
 } from "../controllers/userController.js"
 
 const router = express.Router()
 
-// multer storage
-const storage = multer.diskStorage({
-destination:(req,file,cb)=>{
-cb(null,"uploads/")
-},
-filename:(req,file,cb)=>{
-cb(null,Date.now()+"-"+file.originalname)
-}
-})
+router.get("/:id", getProfile)
 
-const upload = multer({storage})
+router.put("/:id", upload.single("profilePic"), updateProfile) // ✅ FIXED
 
-// routes
-router.get("/:id",getProfile)
-
-router.put("/:id",upload.single("profilePic"),updateProfile)
-
-router.put("/follow/:id",followUser)
-
-router.put("/unfollow/:id",unfollowUser)
+router.put("/follow/:id", followUser)
+router.put("/unfollow/:id", unfollowUser)
 
 export default router

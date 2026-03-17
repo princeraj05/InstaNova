@@ -26,40 +26,37 @@ res.status(500).json(err)
 // ============================
 export const updateProfile = async (req,res)=>{
 
-try{
+  try{
 
-let profilePic = req.body.profilePic
+    let profilePic = req.body.profilePic
 
-// if new image uploaded
-if(req.file){
-profilePic = req.file.filename
+    if(req.file){
+      profilePic = req.file.path   // ✅ FIXED
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(
+      req.params.id,
+      {
+        username:req.body.username,
+        bio:req.body.bio,
+        profilePic:profilePic
+      },
+      {new:true}
+    ).select("-password")
+
+    res.json(updatedUser)
+
+  }catch(err){
+
+    console.log(err)
+
+    res.status(500).json({
+      message:"Profile update error"
+    })
+
+  }
+
 }
-
-const updatedUser = await User.findByIdAndUpdate(
-req.params.id,
-{
-username:req.body.username,
-bio:req.body.bio,
-profilePic:profilePic
-},
-{new:true}
-).select("-password")
-
-res.json(updatedUser)
-
-}catch(err){
-
-console.log(err)
-
-res.status(500).json({
-message:"Profile update error"
-})
-
-}
-
-}
-
-
 // ============================
 // Follow User
 // ============================
