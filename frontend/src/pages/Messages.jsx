@@ -11,16 +11,19 @@ export default function Messages(){
   const [messages,setMessages] = useState([])
   const [search,setSearch] = useState("")
   const [users,setUsers] = useState([])
+  const [conversations,setConversations] = useState([]) // 🔥 NEW
   const [selectedUser,setSelectedUser] = useState(null)
   const [conversation,setConversation] = useState(null)
 
   const socket = useRef()
 
-  // 🔥 CONNECT SOCKET
+  // 🔥 SOCKET CONNECT (FIXED DUPLICATE ISSUE)
   useEffect(()=>{
     socket.current = io(import.meta.env.VITE_SERVER_URL, {
       transports: ["websocket"]
     })
+
+    socket.current.emit("addUser", userId) // 🔥 important
 
     socket.current.on("newMessage",(data)=>{
       if(data.conversationId === conversation?._id){
@@ -33,6 +36,20 @@ export default function Messages(){
     }
 
   },[conversation])
+
+  // 🔥 LOAD OLD CONVERSATIONS
+  useEffect(()=>{
+    const fetchConversations = async()=>{
+      try{
+        const res = await API.get(`/conversations/${userId}`)
+        setConversations(res.data)
+      }catch(err){
+        console.log(err)
+      }
+    }
+
+    fetchConversations()
+  },[])
 
   // 🔍 SEARCH
   const handleSearch = async(e)=>{
@@ -66,7 +83,20 @@ export default function Messages(){
     setMessages(msgs.data)
   }
 
-  // 📩 SEND MESSAGE
+  // 🔥 CLICK OLD CHAT
+  const openConversation = async(conv)=>{
+    const friendId = conv.members.find(id => id !== userId)
+
+    const resUser = await API.get(`/user/${friendId}`)
+    setSelectedUser(resUser.data)
+
+    setConversation(conv)
+
+    const msgs = await API.get(`/messages/${conv._id}`)
+    setMessages(msgs.data)
+  }
+
+  // 📩 SEND MESSAGE (FIXED DUPLICATE)
   const sendMessage = async()=>{
     if(!message || !conversation) return
 
@@ -78,8 +108,15 @@ export default function Messages(){
 
     await API.post("/messages", newMsg)
 
-    // 🔥 instant UI
-    setMessages(prev => [...prev,newMsg])
+    // ❌ REMOVE THIS (duplicate cause)
+    // setMessages(prev => [...prev,newMsg])
+
+    // ✅ SEND VIA SOCKET
+    socket.current.emit("sendMessage", {
+      senderId: userId,
+      receiverId: selectedUser._id,
+      text: message
+    })
 
     setMessage("")
   }
@@ -103,6 +140,7 @@ export default function Messages(){
             className="w-full border p-2 rounded mb-4"
           />
 
+          {/* 🔥 SEARCH USERS */}
           {users.map(u=>(
             <div
               key={u._id}
@@ -110,6 +148,17 @@ export default function Messages(){
               className="p-2 hover:bg-gray-100 cursor-pointer rounded"
             >
               {u.username}
+            </div>
+          ))}
+
+          {/* 🔥 OLD CHATS */}
+          {search === "" && conversations.map(c=>(
+            <div
+              key={c._id}
+              onClick={()=>openConversation(c)}
+              className="p-2 hover:bg-gray-100 cursor-pointer rounded"
+            >
+              Chat ID: {c._id.slice(-5)}
             </div>
           ))}
 
