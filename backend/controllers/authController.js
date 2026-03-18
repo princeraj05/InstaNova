@@ -1,80 +1,122 @@
 import User from "../models/User.js"
 import bcrypt from "bcryptjs"
 import jwt from "jsonwebtoken"
+import { OAuth2Client } from "google-auth-library"
 
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID)
 
+// 🔐 REGISTER
 export const register = async (req, res) => {
+  try {
+    const { username, email, password } = req.body
 
-const { username, email, password } = req.body
+    // check existing user (email OR username)
+    const userExist = await User.findOne({
+      $or: [{ email }, { username }]
+    })
 
-try {
+    if (userExist) {
+      return res.status(400).json({
+        message: "User already exists"
+      })
+    }
 
-const userExist = await User.findOne({ username })
+    const hashed = await bcrypt.hash(password, 10)
 
-if (userExist) {
-return res.json({
-message: "Username already exists"
-})
+    const user = await User.create({
+      username,
+      email,
+      password: hashed
+    })
+
+    res.status(201).json({
+      message: "User registered successfully",
+      user
+    })
+
+  } catch (err) {
+    res.status(500).json({ message: "Register error", error: err.message })
+  }
 }
 
-const hashed = await bcrypt.hash(password, 10)
-
-const user = new User({
-username,
-email,
-password: hashed
-})
-
-await user.save()
-
-res.json({
-message: "User registered"
-})
-
-} catch (err) {
-
-res.status(500).json(err)
-
-}
-
-}
-
-
-
+// 🔐 LOGIN
 export const login = async (req, res) => {
+  try {
+    const { email, password } = req.body
 
-try {
+    const user = await User.findOne({ email })
 
-const { email, password } = req.body
+    if (!user) {
+      return res.status(404).json({ message: "User not found" })
+    }
 
-const user = await User.findOne({ email })
+    // Google users ke liye password skip
+    if (user.password !== "google-auth") {
+      const valid = await bcrypt.compare(password, user.password)
 
-if (!user) {
-return res.json({ message: "User not found" })
+      if (!valid) {
+        return res.status(400).json({ message: "Invalid password" })
+      }
+    }
+
+    const token = jwt.sign(
+      { id: user._id },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    )
+
+    res.json({
+      message: "Login success",
+      token,
+      user
+    })
+
+  } catch (err) {
+    res.status(500).json({ message: "Login error", error: err.message })
+  }
 }
 
-const valid = await bcrypt.compare(password, user.password)
+// 🔥 GOOGLE AUTH (LOGIN + REGISTER)
+export const googleAuth = async (req, res) => {
+  try {
+    const { token } = req.body
 
-if (!valid) {
-return res.json({ message: "Invalid password" })
-}
+    const ticket = await client.verifyIdToken({
+      idToken: token,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    })
 
-const token = jwt.sign(
-{ id: user._id },
-process.env.JWT_SECRET,
-{ expiresIn: "7d" }
-)
+    const payload = ticket.getPayload()
+    const { email, name, picture } = payload
 
-res.json({
-message: "Login success",
-token,
-user
-})
+    let user = await User.findOne({ email })
 
-} catch (err) {
+    // 🆕 create if not exists
+    if (!user) {
+      user = await User.create({
+        username: name,
+        email,
+        profilePic: picture,
+        password: "google-auth",
+      })
+    }
 
-res.status(500).json(err)
+    const jwtToken = jwt.sign(
+      { id: user._id },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    )
 
-}
+    res.json({
+      message: "Google login success",
+      token: jwtToken,
+      user
+    })
 
+  } catch (err) {
+    res.status(500).json({
+      message: "Google login failed",
+      error: err.message
+    })
+  }
 }

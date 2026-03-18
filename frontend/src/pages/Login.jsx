@@ -1,6 +1,7 @@
 import { useState } from "react"
 import API from "../api/axios"
 import { Link, useNavigate } from "react-router-dom"
+import { GoogleLogin } from "@react-oauth/google"
 
 export default function Login() {
   const [email, setEmail] = useState("")
@@ -15,11 +16,31 @@ export default function Login() {
       localStorage.setItem("userId", res.data.user._id)
       localStorage.setItem("token", res.data.token)
       navigate("/home")
-    } catch { alert("Login failed") }
-    finally { setLoading(false) }
+    } catch {
+      alert("Login failed")
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const handleKeyDown = (e) => { if (e.key === "Enter") handleLogin() }
+  const handleGoogleLogin = async (credentialResponse) => {
+    try {
+      const res = await API.post("/auth/google", {
+        token: credentialResponse.credential,
+      })
+
+      localStorage.setItem("userId", res.data.user._id)
+      localStorage.setItem("token", res.data.token)
+
+      navigate("/home")
+    } catch {
+      alert("Google login failed")
+    }
+  }
+
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter") handleLogin()
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 via-white to-purple-50 p-4">
@@ -39,6 +60,7 @@ export default function Login() {
         </div>
 
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-4">
+
           <input
             className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition bg-gray-50"
             placeholder="Email address"
@@ -46,6 +68,7 @@ export default function Login() {
             onChange={e => setEmail(e.target.value)}
             onKeyDown={handleKeyDown}
           />
+
           <input
             type="password"
             className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition bg-gray-50"
@@ -53,16 +76,38 @@ export default function Login() {
             onChange={e => setPassword(e.target.value)}
             onKeyDown={handleKeyDown}
           />
-          <button onClick={handleLogin} disabled={loading}
-            className="w-full py-3 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-xl font-semibold text-sm hover:opacity-90 transition shadow-lg shadow-indigo-200 flex items-center justify-center gap-2">
-            {loading ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : null}
+
+          <button
+            onClick={handleLogin}
+            disabled={loading}
+            className="w-full py-3 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-xl font-semibold text-sm hover:opacity-90 transition shadow-lg shadow-indigo-200 flex items-center justify-center gap-2"
+          >
+            {loading && <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
             Sign In
           </button>
+
+          {/* Divider */}
+          <div className="flex items-center gap-2">
+            <div className="flex-1 h-px bg-gray-200"></div>
+            <span className="text-xs text-gray-400">OR</span>
+            <div className="flex-1 h-px bg-gray-200"></div>
+          </div>
+
+          {/* 🔥 Google Login */}
+          <div className="flex justify-center">
+            <GoogleLogin
+              onSuccess={handleGoogleLogin}
+              onError={() => alert("Google Login Failed")}
+            />
+          </div>
+
         </div>
 
         <p className="text-center mt-4 text-sm text-gray-500">
           Don't have an account?{" "}
-          <Link to="/register" className="text-indigo-500 font-semibold hover:underline">Register</Link>
+          <Link to="/register" className="text-indigo-500 font-semibold hover:underline">
+            Register
+          </Link>
         </p>
 
       </div>

@@ -1,4 +1,4 @@
-import {BrowserRouter,Routes,Route} from "react-router-dom"
+import { BrowserRouter, Routes, Route } from "react-router-dom"
 
 import Login from "./pages/Login"
 import Register from "./pages/Register"
@@ -7,7 +7,6 @@ import Profile from "./pages/Profile"
 import Reels from "./pages/Reels"
 import CreatePost from "./pages/CreatePost"
 import EditProfile from "./pages/EditProfile"
-
 import Messages from "./pages/Messages"
 import Search from "./pages/Search"
 import Explore from "./pages/Explore"
@@ -15,37 +14,57 @@ import Notifications from "./pages/Notifications"
 import More from "./pages/More"
 import UserProfile from "./pages/UserProfile"
 
-function App(){
+import ProtectedRoute from "./components/ProtectedRoute"
 
-return(
+function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
 
-<BrowserRouter>
+        {/* 🔐 Auth Routes */}
+        <Route path="/" element={<Login />} />
+        <Route path="/register" element={<Register />} />
 
-<Routes>
+        {/* 🔒 Protected Routes */}
+        <Route path="/home" element={
+          <ProtectedRoute><Home /></ProtectedRoute>
+        } />
+        <Route path="/profile" element={
+          <ProtectedRoute><Profile /></ProtectedRoute>
+        } />
+        <Route path="/reels" element={
+          <ProtectedRoute><Reels /></ProtectedRoute>
+        } />
+        <Route path="/create" element={
+          <ProtectedRoute><CreatePost /></ProtectedRoute>
+        } />
+        <Route path="/edit-profile" element={
+          <ProtectedRoute><EditProfile /></ProtectedRoute>
+        } />
 
-<Route path="/" element={<Login/>}/>
-<Route path="/register" element={<Register/>}/>
+        <Route path="/messages" element={
+          <ProtectedRoute><Messages /></ProtectedRoute>
+        } />
+        <Route path="/search" element={
+          <ProtectedRoute><Search /></ProtectedRoute>
+        } />
+        <Route path="/explore" element={
+          <ProtectedRoute><Explore /></ProtectedRoute>
+        } />
+        <Route path="/notifications" element={
+          <ProtectedRoute><Notifications /></ProtectedRoute>
+        } />
+        <Route path="/more" element={
+          <ProtectedRoute><More /></ProtectedRoute>
+        } />
 
-<Route path="/home" element={<Home/>}/>
-<Route path="/profile" element={<Profile/>}/>
-<Route path="/reels" element={<Reels/>}/>
-<Route path="/create" element={<CreatePost/>}/>
-<Route path="/edit-profile" element={<EditProfile/>}/>
+        <Route path="/user/:id" element={
+          <ProtectedRoute><UserProfile /></ProtectedRoute>
+        } />
 
-<Route path="/messages" element={<Messages/>}/>
-<Route path="/search" element={<Search/>}/>
-<Route path="/explore" element={<Explore/>}/>
-<Route path="/notifications" element={<Notifications/>}/>
-<Route path="/more" element={<More/>}/>
-
-<Route path="/user/:id" element={<UserProfile/>}/>
-
-</Routes>
-
-</BrowserRouter>
-
-)
-
+      </Routes>
+    </BrowserRouter>
+  )
 }
 
 export default App
