@@ -1,6 +1,9 @@
 import mongoose from "mongoose"
 
 const UserSchema = new mongoose.Schema({
+    savedPosts: [{ type: mongoose.Schema.Types.ObjectId, ref: "Post" }],
+followers:  [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+following:  [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
 
 username:{
 type:String,

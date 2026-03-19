@@ -4,9 +4,17 @@ import API from "../api/axios"
 import { io } from "socket.io-client"
 
 export default function Messages() {
+  
+
+ const location = useLocation()
+  const sharedReel = location.state?.shareReel
+
   const userId = localStorage.getItem("userId")
 
-  const [message, setMessage] = useState("")
+  const [message, setMessage] = useState(
+    sharedReel ? `Check out this reel: ${sharedReel.media}` : ""
+  )
+
   const [messages, setMessages] = useState([])
   const [search, setSearch] = useState("")
   const [users, setUsers] = useState([])

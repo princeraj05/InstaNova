@@ -16,6 +16,7 @@ import postRoutes from "./routes/postRoutes.js"
 import reelsRoutes from "./routes/reelsRoutes.js"
 import messageRoutes from "./routes/messageRoutes.js"
 import conversationRoutes from "./routes/conversationRoutes.js"
+import notificationRoutes from "./routes/notifications.js"
 
 dotenv.config()
 
@@ -39,6 +40,7 @@ if (!fs.existsSync(uploadsPath)) {
 app.use("/uploads", express.static(uploadsPath))
 
 // routes
+app.use("/api/notifications", notificationRoutes)
 app.use("/api/messages", messageRoutes)
 app.use("/api/conversations", conversationRoutes)
 app.use("/api/auth", authRoutes)
