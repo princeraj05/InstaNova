@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react"
-import { useLocation } from "react-router-dom"
+import { useLocation, useNavigate } from "react-router-dom"
 
 import Navbar from "../components/Navbar"
 import API from "../api/axios"
@@ -8,6 +8,7 @@ import { io } from "socket.io-client"
 export default function Messages() {
 
   const location = useLocation()
+  const navigate = useNavigate()   // 🔥 ADD
   const sharedReel = location.state?.shareReel
 
   const userId = localStorage.getItem("userId")
@@ -112,7 +113,6 @@ export default function Messages() {
     setShowChat(true)
   }
 
-  // 🔥 FIXED SEND MESSAGE (WITH REEL + SOCKET)
   const sendMessage = async () => {
     if (!conversation) return
 
@@ -123,7 +123,7 @@ export default function Messages() {
       reel: sharedReel?._id
     })
 
-    setMessages(prev => [...prev, data]) // 🔥 instant UI update
+    setMessages(prev => [...prev, data])
 
     socket.current.emit("sendMessage", {
       senderId: userId,
@@ -156,22 +156,20 @@ export default function Messages() {
 
           {/* LEFT */}
           <div className={`flex flex-col bg-white border-r border-gray-100 shadow-sm
-            transition-transform duration-300 ease-in-out
-            md:static md:translate-x-0 md:w-80 md:min-w-[260px]
-            absolute inset-0 z-10 w-full
+            md:w-80 absolute inset-0 z-10 w-full
             ${showChat ? "-translate-x-full" : "translate-x-0"}`}>
 
-            <div className="px-4 pt-5 pb-3 border-b border-gray-100">
-              <h2 className="text-xl font-bold text-gray-900 mb-3">Messages</h2>
+            <div className="px-4 pt-5 pb-3 border-b">
+              <h2 className="text-xl font-bold mb-3">Messages</h2>
               <input
                 placeholder="Search users..."
                 value={search}
                 onChange={handleSearch}
-                className="w-full px-3 py-2 bg-gray-100 rounded-full text-sm outline-none"
+                className="w-full px-3 py-2 bg-gray-100 rounded-full text-sm"
               />
             </div>
 
-            <div className="flex-1 overflow-y-auto pb-16 md:pb-0">
+            <div className="flex-1 overflow-y-auto">
               {users.map(u => (
                 <div key={u._id} onClick={() => selectUser(u)}
                   className="flex items-center gap-3 px-4 py-2 cursor-pointer hover:bg-gray-50">
@@ -195,8 +193,7 @@ export default function Messages() {
           </div>
 
           {/* RIGHT */}
-          <div className={`flex flex-col flex-1
-            ${showChat ? "translate-x-0" : "translate-x-full"} md:translate-x-0`}>
+          <div className={`flex flex-col flex-1 ${showChat ? "translate-x-0" : "translate-x-full"} md:translate-x-0`}>
 
             {selectedUser ? (
               <>
@@ -210,17 +207,21 @@ export default function Messages() {
                     return (
                       <div key={i} className={`flex ${isMine ? "justify-end" : "justify-start"}`}>
                         <div className={`p-2 rounded-lg ${isMine ? "bg-indigo-500 text-white" : "bg-white"}`}>
-                          
-                          {/* TEXT */}
+
                           {m.text && <p>{m.text}</p>}
 
-                          {/* 🔥 SHOW REEL */}
+                          {/* 🔥 CLICKABLE REEL */}
                           {m.reel && (
-                            <video
-                              src={m.reel.media}
-                              className="mt-2 rounded-lg max-h-60"
-                              controls
-                            />
+                            <div
+                              onClick={() => navigate(`/reels?reelId=${m.reel._id}`)}
+                              className="mt-2 cursor-pointer"
+                            >
+                              <video
+                                src={m.reel.media}
+                                className="rounded-lg max-h-60"
+                              />
+                              <p className="text-xs text-blue-500 mt-1">Open Reel</p>
+                            </div>
                           )}
 
                         </div>
