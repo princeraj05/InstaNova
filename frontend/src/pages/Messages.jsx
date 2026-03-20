@@ -25,17 +25,16 @@ export default function Messages() {
   const [conversation, setConversation] = useState(null)
   const [conversationUsers, setConversationUsers] = useState({})
   const [showChat, setShowChat] = useState(false)
-  const [sending, setSending] = useState(false)  // 🔥 FIX: prevent double send
+  const [sending, setSending] = useState(false)
 
   const socket = useRef()
   const messagesEndRef = useRef()
-  const conversationRef = useRef()  // 🔥 FIX: stable ref for socket listener
+  const conversationRef = useRef()
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages])
 
-  // 🔥 FIX: Keep conversationRef in sync so socket always sees latest conversation
   useEffect(() => {
     conversationRef.current = conversation
   }, [conversation])
@@ -45,10 +44,8 @@ export default function Messages() {
     socket.current.emit("addUser", userId)
 
     socket.current.on("newMessage", (data) => {
-      // Use ref instead of stale closure value
       if (data.conversationId === conversationRef.current?._id) {
         setMessages(prev => {
-          // 🔥 FIX: Deduplicate - don't add if same _id already exists
           const alreadyExists = prev.some(m => m._id === data._id)
           if (alreadyExists) return prev
           return [...prev, data]
@@ -57,7 +54,7 @@ export default function Messages() {
     })
 
     return () => { socket.current.disconnect() }
-  }, [])  // 🔥 FIX: Run only once, not on every conversation change
+  }, [])
 
   useEffect(() => {
     const fetchConversations = async () => {
@@ -127,8 +124,7 @@ export default function Messages() {
   }
 
   const sendMessage = async () => {
-    if (!conversation || !message.trim() || sending) return  // 🔥 FIX: guard sending flag
-
+    if (!conversation || !message.trim() || sending) return
     setSending(true)
     try {
       const { data } = await API.post("/messages", {
@@ -137,22 +133,18 @@ export default function Messages() {
         text: message,
         reel: sharedReel?._id
       })
-
-      // 🔥 FIX: Add message only from API response (single source of truth)
       setMessages(prev => {
         const alreadyExists = prev.some(m => m._id === data._id)
         if (alreadyExists) return prev
         return [...prev, data]
       })
-
       socket.current.emit("sendMessage", {
         senderId: userId,
         receiverId: selectedUser._id,
         text: message,
         conversationId: conversation._id,
-        _id: data._id  // 🔥 FIX: pass _id so receiver can deduplicate
+        _id: data._id
       })
-
       setMessage("")
     } catch (err) {
       console.error("Send failed", err)
@@ -197,17 +189,18 @@ export default function Messages() {
       <div className="flex-1 md:ml-64 h-screen overflow-hidden">
         <div className="flex h-full">
 
-          {/* ===== LEFT SIDEBAR ===== */}
+          {/* ===== LEFT SIDEBAR =====
+              Mobile  → full width, hidden when showChat=true (display:none)
+              Desktop → fixed 320px, always visible
+          */}
           <div className={`
-            flex flex-col bg-white border-r border-gray-200
+            flex-col bg-white border-r border-gray-200 h-full
             w-full md:w-80 md:flex-shrink-0
-            absolute md:relative inset-0 z-10
-            transition-transform duration-300
-            ${showChat ? "-translate-x-full md:translate-x-0" : "translate-x-0"}
+            ${showChat ? "hidden md:flex" : "flex"}
           `}>
 
             {/* Header */}
-            <div className="px-5 pt-6 pb-4 border-b border-gray-100">
+            <div className="px-5 pt-6 pb-4 border-b border-gray-100 flex-shrink-0">
               <h2 className="text-2xl font-bold text-gray-900 mb-4">Messages</h2>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
@@ -226,7 +219,7 @@ export default function Messages() {
 
             {/* Search Results */}
             {users.length > 0 && (
-              <div className="border-b border-gray-100">
+              <div className="border-b border-gray-100 flex-shrink-0">
                 <p className="px-5 pt-3 pb-1 text-xs font-semibold text-gray-400 uppercase tracking-wider">Search Results</p>
                 {users.map(u => (
                   <div key={u._id} onClick={() => selectUser(u)}
@@ -285,35 +278,37 @@ export default function Messages() {
             </div>
           </div>
 
-          {/* ===== RIGHT CHAT PANEL ===== */}
+          {/* ===== RIGHT CHAT PANEL =====
+              Mobile  → full width, hidden when showChat=false (display:none)
+              Desktop → flex-1, always visible
+              🔥 KEY: uses flex-col + h-full so input bar stays at bottom
+          */}
           <div className={`
-            flex flex-col flex-1
-            absolute md:relative inset-0 z-10
-            bg-gray-50
-            transition-transform duration-300
-            ${showChat ? "translate-x-0" : "translate-x-full md:translate-x-0"}
+            flex-col bg-gray-50 h-full
+            w-full md:flex-1
+            ${showChat ? "flex" : "hidden md:flex"}
           `}>
-
             {selectedUser ? (
               <>
-                {/* Chat Header */}
-                <div className="flex items-center gap-3 px-4 py-3 bg-white border-b border-gray-100 shadow-sm">
-                  {/* Back button mobile */}
-                  <button onClick={() => setShowChat(false)}
-                    className="md:hidden p-1.5 rounded-full hover:bg-gray-100 text-gray-600 transition">
+                {/* Chat Header — flex-shrink-0 so it never collapses */}
+                <div className="flex items-center gap-3 px-4 py-3 bg-white border-b border-gray-100 shadow-sm flex-shrink-0">
+                  <button
+                    onClick={() => setShowChat(false)}
+                    className="md:hidden p-2 -ml-1 rounded-full hover:bg-gray-100 text-gray-600 transition"
+                  >
                     <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                     </svg>
                   </button>
-                  <img src={getAvatar(selectedUser)} className="w-10 h-10 rounded-full object-cover" alt={selectedUser.username} />
-                  <div>
-                    <p className="font-bold text-gray-900">{selectedUser.username}</p>
+                  <img src={getAvatar(selectedUser)} className="w-10 h-10 rounded-full object-cover flex-shrink-0" alt={selectedUser.username} />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-gray-900 truncate">{selectedUser.username}</p>
                     <p className="text-xs text-green-500">Online</p>
                   </div>
                 </div>
 
-                {/* Messages Area */}
-                <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-3">
+                {/* Messages — flex-1 + min-h-0 is critical for scroll to work inside flex-col */}
+                <div className="flex-1 min-h-0 overflow-y-auto px-4 py-4 flex flex-col gap-3">
                   {messages.map((m, i) => {
                     const isMine = m.sender === userId
                     const showTime = i === messages.length - 1 ||
@@ -321,18 +316,18 @@ export default function Messages() {
 
                     return (
                       <div key={m._id || i} className={`flex flex-col ${isMine ? "items-end" : "items-start"}`}>
-                        <div className={`max-w-xs md:max-w-sm lg:max-w-md rounded-2xl overflow-hidden shadow-sm
+                        <div className={`
+                          max-w-[75vw] sm:max-w-xs md:max-w-sm lg:max-w-md
+                          rounded-2xl overflow-hidden shadow-sm
                           ${isMine
                             ? "bg-indigo-500 text-white rounded-br-sm"
                             : "bg-white text-gray-800 rounded-bl-sm border border-gray-100"
                           }`}>
 
-                          {/* Text */}
                           {m.text && (
-                            <p className="px-4 py-2.5 text-sm leading-relaxed">{m.text}</p>
+                            <p className="px-4 py-2.5 text-sm leading-relaxed break-words">{m.text}</p>
                           )}
 
-                          {/* 🔥 Reel Preview - properly shown */}
                           {m.reel && (
                             <div
                               onClick={() => navigate(`/reels?reelId=${m.reel._id || m.reel}`)}
@@ -342,11 +337,9 @@ export default function Messages() {
                                 <div className="relative">
                                   <video
                                     src={m.reel.media}
-                                    className="w-full max-h-64 object-cover"
-                                    muted
-                                    playsInline
+                                    className="w-full max-h-52 object-cover"
+                                    muted playsInline
                                   />
-                                  {/* Play overlay */}
                                   <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/30 transition">
                                     <div className="w-10 h-10 bg-white/90 rounded-full flex items-center justify-center shadow-lg">
                                       <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-indigo-600 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
@@ -356,16 +349,15 @@ export default function Messages() {
                                   </div>
                                 </div>
                               ) : (
-                                /* Fallback if reel only has ID, not populated */
-                                <div className={`mx-3 mb-2 mt-1 rounded-xl flex items-center gap-2 px-3 py-2
+                                <div className={`mx-3 mb-2 mt-1 rounded-xl flex items-center gap-2 px-3 py-2.5
                                   ${isMine ? "bg-white/20" : "bg-indigo-50 border border-indigo-100"}`}>
-                                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0
+                                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0
                                     ${isMine ? "bg-white/30" : "bg-indigo-500"}`}>
-                                    <svg xmlns="http://www.w3.org/2000/svg" className={`w-4 h-4 ${isMine ? "text-white" : "text-white"}`} fill="currentColor" viewBox="0 0 24 24">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-white ml-0.5" fill="currentColor" viewBox="0 0 24 24">
                                       <path d="M8 5v14l11-7z" />
                                     </svg>
                                   </div>
-                                  <p className={`text-xs font-medium ${isMine ? "text-white" : "text-indigo-600"}`}>View Reel</p>
+                                  <p className={`text-xs font-semibold ${isMine ? "text-white" : "text-indigo-600"}`}>View Reel</p>
                                 </div>
                               )}
                               <p className={`text-xs px-3 pb-2 pt-1 ${isMine ? "text-indigo-200" : "text-indigo-500"}`}>
@@ -375,7 +367,6 @@ export default function Messages() {
                           )}
                         </div>
 
-                        {/* Timestamp */}
                         {showTime && (
                           <span className="text-xs text-gray-400 mt-1 px-1">
                             {formatTime(m.createdAt)}
@@ -387,11 +378,11 @@ export default function Messages() {
                   <div ref={messagesEndRef} />
                 </div>
 
-                {/* Shared Reel Preview Banner */}
+                {/* Shared Reel Banner */}
                 {sharedReel && (
-                  <div className="mx-4 mb-2 bg-indigo-50 border border-indigo-200 rounded-xl flex items-center gap-3 px-3 py-2">
+                  <div className="mx-3 mb-2 bg-indigo-50 border border-indigo-200 rounded-xl flex items-center gap-3 px-3 py-2 flex-shrink-0">
                     <div className="w-10 h-10 bg-indigo-500 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-white ml-0.5" fill="currentColor" viewBox="0 0 24 24">
                         <path d="M8 5v14l11-7z" />
                       </svg>
                     </div>
@@ -402,39 +393,43 @@ export default function Messages() {
                   </div>
                 )}
 
-                {/* Input */}
-                <div className="flex items-center gap-2 px-4 py-3 bg-white border-t border-gray-100">
+                {/* 🔥 INPUT BAR
+                    flex-shrink-0 → never gets squeezed out
+                    Always pinned to the bottom of the flex-col parent
+                */}
+                <div className="flex items-center gap-2 px-3 py-3 bg-white border-t border-gray-100 flex-shrink-0">
                   <input
                     value={message}
                     onChange={e => setMessage(e.target.value)}
                     onKeyDown={handleKeyDown}
                     placeholder="Write a message..."
-                    className="flex-1 border border-gray-200 px-4 py-2.5 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 bg-gray-50 transition"
+                    className="flex-1 min-w-0 border border-gray-200 px-4 py-2.5 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 bg-gray-50 transition"
                   />
                   <button
                     onClick={sendMessage}
                     disabled={sending || !message.trim()}
-                    className="flex items-center gap-1.5 px-4 py-2.5 bg-indigo-500 hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-full text-sm font-medium transition-colors">
+                    className="flex-shrink-0 flex items-center gap-1.5 px-4 py-2.5 bg-indigo-500 hover:bg-indigo-600 active:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-full text-sm font-medium transition-colors"
+                  >
                     <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
                     </svg>
-                    Send
+                    <span className="hidden sm:inline">Send</span>
                   </button>
                 </div>
               </>
             ) : (
-              /* Empty State */
-              <div className="flex-1 flex flex-col items-center justify-center text-gray-300 gap-3">
+              <div className="flex-1 flex flex-col items-center justify-center text-gray-300 gap-3 p-4">
                 <div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center">
                   <svg xmlns="http://www.w3.org/2000/svg" className="w-10 h-10 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
                   </svg>
                 </div>
-                <p className="text-gray-400 font-medium">Select a chat to start messaging</p>
-                <p className="text-gray-300 text-sm">Search users above to start a new conversation</p>
+                <p className="text-gray-400 font-medium text-center">Select a chat to start messaging</p>
+                <p className="text-gray-300 text-sm text-center">Search users above to start a new conversation</p>
               </div>
             )}
           </div>
+
         </div>
       </div>
     </div>
