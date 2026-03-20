@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from "react"
+import { useNavigate } from "react-router-dom" // ✅ ADD
 import Navbar from "../components/Navbar"
 import API from "../api/axios"
 import { io } from "socket.io-client"
@@ -8,6 +9,7 @@ import {
   FiMessageCircle,
   FiSend,
   FiBookmark,
+  FiBell // ✅ ADD
 } from "react-icons/fi"
 import { FaHeart, FaBookmark } from "react-icons/fa"
 
@@ -24,6 +26,7 @@ export default function Home() {
   const [notifications, setNotifications] = useState([])
 
   const videoRefs = useRef([])
+  const navigate = useNavigate() // ✅ ADD
 
   const me = JSON.parse(localStorage.getItem("user") || "{}")
 
@@ -165,7 +168,22 @@ export default function Home() {
       <div className="flex-1 md:ml-64 flex justify-center">
         <div className="w-full max-w-xl px-4 py-6 pb-20 md:pb-6">
 
-          <h2 className="text-xl font-bold text-gray-900 mb-5">Feed</h2>
+          {/* 🔥 HEADER WITH NOTIFICATION */}
+          <div className="flex items-center justify-between mb-5">
+            <h2 className="text-xl font-bold text-gray-900">Feed</h2>
+
+            <button
+              onClick={() => navigate("/notifications")}
+              className="relative"
+            >
+              <FiBell size={22} />
+
+              {/* 🔴 UNREAD DOT */}
+              {notifications.some(n => !n.read) && (
+                <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full"></span>
+              )}
+            </button>
+          </div>
 
           {posts.map((post, index) => {
             const s = postStates[post._id] || {}
