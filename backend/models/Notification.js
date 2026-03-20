@@ -1,4 +1,4 @@
-// models/Notification.js
+import mongoose from "mongoose"   // ❗ MISSING THA
 
 const notificationSchema = new mongoose.Schema({
   recipient: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
@@ -6,7 +6,7 @@ const notificationSchema = new mongoose.Schema({
 
   type: { 
     type: String, 
-    enum: ["like", "comment", "follow", "post"], // 🔥 ADD post
+    enum: ["like", "comment", "follow", "post"],
     required: true 
   },
 
@@ -17,3 +17,6 @@ const notificationSchema = new mongoose.Schema({
 
   createdAt: { type: Date, default: Date.now }
 })
+
+// ❗ THIS WAS MISSING (MAIN ERROR)
+export default mongoose.model("Notification", notificationSchema)
