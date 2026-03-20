@@ -20,13 +20,11 @@ export default function Messages() {
   const [conversation, setConversation] = useState(null)
   const [conversationUsers, setConversationUsers] = useState({})
   const [sending, setSending] = useState(false)
-  const [view, setView] = useState("sidebar") // "sidebar" | "chat"
+  const [view, setView] = useState("sidebar")
 
   const socket = useRef()
   const messagesEndRef = useRef()
   const conversationRef = useRef()
-
-  // ── current logged-in user info (for avatar in messages)
   const me = JSON.parse(localStorage.getItem("user") || "{}")
 
   useEffect(() => {
@@ -151,7 +149,6 @@ export default function Messages() {
     return date.toLocaleDateString([], { day: "2-digit", month: "short" })
   }
 
-  /* ─── Avatar component ─── */
   const Avatar = ({ user, size = "w-8 h-8" }) => (
     <img
       src={getAvatar(user)}
@@ -166,7 +163,6 @@ export default function Messages() {
   ══════════════════════════════════════════════════════════ */
   const SidebarPanel = () => (
     <div className="flex flex-col bg-white h-full w-full border-r border-gray-200">
-      {/* Header */}
       <div className="px-5 pt-6 pb-4 border-b border-gray-100 flex-shrink-0">
         <h2 className="text-2xl font-bold text-gray-900 mb-4">Messages</h2>
         <div className="relative">
@@ -184,7 +180,6 @@ export default function Messages() {
         </div>
       </div>
 
-      {/* Search results */}
       {users.length > 0 && (
         <div className="border-b border-gray-100 flex-shrink-0">
           <p className="px-5 pt-3 pb-1 text-xs font-semibold text-gray-400 uppercase tracking-wider">Results</p>
@@ -201,8 +196,8 @@ export default function Messages() {
         </div>
       )}
 
-      {/* Conversations */}
-      <div className="flex-1 overflow-y-auto">
+      {/* 🔥 KEY: pb-20 on mobile so last conversation isn't hidden behind bottom Navbar */}
+      <div className="flex-1 overflow-y-auto pb-20 md:pb-0">
         {search === "" && conversations.length > 0 && (
           <p className="px-5 pt-4 pb-1 text-xs font-semibold text-gray-400 uppercase tracking-wider">Recent</p>
         )}
@@ -244,12 +239,19 @@ export default function Messages() {
      CHAT PANEL
   ══════════════════════════════════════════════════════════ */
   const ChatPanel = () => (
-    <div className="flex flex-col bg-gray-50 h-full w-full">
+    /*
+      🔥 KEY FIX:
+      Mobile  → height = 100vh - bottom Navbar height (~64px)
+                Use `h-[calc(100vh-64px)]` so panel doesn't go behind Navbar
+      Desktop → h-full (no bottom Navbar)
+    */
+    <div className="flex flex-col bg-gray-50 w-full
+      h-[calc(100dvh-64px)] md:h-full">
+
       {selectedUser ? (
         <>
-          {/* ── Chat Header ── */}
+          {/* Chat Header */}
           <div className="flex items-center gap-3 px-3 py-3 bg-white border-b border-gray-100 shadow-sm flex-shrink-0">
-            {/* Back — mobile only */}
             <button
               onClick={() => setView("sidebar")}
               className="md:hidden p-2 rounded-full hover:bg-gray-100 text-gray-600 transition flex-shrink-0"
@@ -265,29 +267,23 @@ export default function Messages() {
             </div>
           </div>
 
-          {/* ── Messages Area ── */}
+          {/* Messages scroll area */}
           <div className="flex-1 min-h-0 overflow-y-auto px-3 py-4 flex flex-col gap-4">
             {messages.map((m, i) => {
               const isMine = m.sender === userId
-              // Determine sender user object for avatar
               const senderUser = isMine ? me : selectedUser
-              // Show avatar only on last consecutive message from same sender
               const isLastInGroup = i === messages.length - 1 || messages[i + 1]?.sender !== m.sender
-              const showTime = isLastInGroup
 
               return (
                 <div key={m._id || i} className={`flex items-end gap-2 ${isMine ? "flex-row-reverse" : "flex-row"}`}>
 
-                  {/* ── Sender Avatar — show on last message in group ── */}
                   <div className="flex-shrink-0 w-8">
-                    {isLastInGroup ? (
-                      <Avatar user={senderUser} size="w-8 h-8" />
-                    ) : (
-                      <div className="w-8 h-8" /> /* spacer to keep alignment */
-                    )}
+                    {isLastInGroup
+                      ? <Avatar user={senderUser} size="w-8 h-8" />
+                      : <div className="w-8 h-8" />
+                    }
                   </div>
 
-                  {/* ── Bubble + Time ── */}
                   <div className={`flex flex-col gap-1 max-w-[65vw] sm:max-w-xs md:max-w-sm ${isMine ? "items-end" : "items-start"}`}>
                     <div className={`
                       rounded-2xl overflow-hidden shadow-sm
@@ -296,12 +292,10 @@ export default function Messages() {
                         : "bg-white text-gray-800 rounded-bl-none border border-gray-100"
                       }`}>
 
-                      {/* Text */}
                       {m.text && (
                         <p className="px-4 py-2.5 text-sm leading-relaxed break-words">{m.text}</p>
                       )}
 
-                      {/* Reel card */}
                       {m.reel && (
                         <div
                           onClick={() => navigate(`/reels?reelId=${m.reel._id || m.reel}`)}
@@ -342,8 +336,7 @@ export default function Messages() {
                       )}
                     </div>
 
-                    {/* Timestamp below bubble */}
-                    {showTime && (
+                    {isLastInGroup && (
                       <span className="text-xs text-gray-400 px-1">{formatTime(m.createdAt)}</span>
                     )}
                   </div>
@@ -368,15 +361,9 @@ export default function Messages() {
             </div>
           )}
 
-          {/* ── Input Bar ──
-              flex-shrink-0 → never squeezed
-              gap-2 + no text label on send → fits all screen sizes
-          */}
+          {/* 🔥 Input bar — always pinned at bottom, never hidden */}
           <div className="flex-shrink-0 flex items-center gap-2 px-3 py-3 bg-white border-t border-gray-100">
-            {/* My avatar beside input */}
             <Avatar user={me} size="w-8 h-8" />
-
-            {/* Text input */}
             <input
               value={message}
               onChange={e => setMessage(e.target.value)}
@@ -384,8 +371,6 @@ export default function Messages() {
               placeholder="Write a message..."
               className="flex-1 min-w-0 border border-gray-200 px-3 py-2.5 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 bg-gray-50 transition"
             />
-
-            {/* Send button — icon only, always visible */}
             <button
               onClick={sendMessage}
               disabled={sending || !message.trim()}
@@ -411,9 +396,6 @@ export default function Messages() {
     </div>
   )
 
-  /* ══════════════════════════════════════════════════════════
-     ROOT
-  ══════════════════════════════════════════════════════════ */
   return (
     <div className="flex bg-gray-50 min-h-screen">
       <Navbar />
