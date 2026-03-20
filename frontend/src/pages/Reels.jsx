@@ -21,11 +21,22 @@ export default function Reels() {
   const [activeIndex, setActiveIndex] = useState(0)
   const [paused, setPaused] = useState(false)
 
-  const videoRefs = useRef([])
+  // ── Two separate ref arrays — one per layout ──
+  const mobileRefs = useRef([])   // visible on mobile
+  const desktopRefs = useRef([])  // visible on desktop
+
   const navigate = useNavigate()
   const location = useLocation()
   const query = new URLSearchParams(location.search)
   const reelId = query.get("reelId")
+
+  // ── Detect current breakpoint ──
+  const isMobile = () => window.innerWidth < 768
+
+  // ── Helper: get the currently-visible video at index ──
+  const getActiveVideo = (index) => {
+    return isMobile() ? mobileRefs.current[index] : desktopRefs.current[index]
+  }
 
   useEffect(() => {
     const fetchReels = async () => {
@@ -48,41 +59,61 @@ export default function Reels() {
     fetchReels()
   }, [])
 
+  // ── Auto scroll to reelId ──
   useEffect(() => {
     if (reelId && reels.length > 0) {
       const index = reels.findIndex(r => r._id === reelId)
       if (index !== -1) {
         setTimeout(() => {
-          videoRefs.current[index]?.closest("[data-snap]")
-            ?.scrollIntoView({ behavior: "smooth", block: "start" })
-        }, 300)
+          const snap = document.querySelectorAll("[data-snap]")[index]
+          snap?.scrollIntoView({ behavior: "smooth", block: "start" })
+        }, 400)
       }
     }
   }, [reels, reelId])
 
-  // ── Single IntersectionObserver on the ONE video element per reel ──
+  // ── IntersectionObserver: observe BOTH mobile and desktop refs ──
   useEffect(() => {
-    if (videoRefs.current.length === 0) return
+    if (reels.length === 0) return
+
+    const handleEntry = (video, isIntersecting, index) => {
+      if (isIntersecting) {
+        // Only play if THIS layout is actually visible
+        const visible = isMobile()
+          ? mobileRefs.current[index] === video
+          : desktopRefs.current[index] === video
+
+        if (visible) {
+          video.play().catch(() => {})
+          setActiveIndex(index)
+          setPaused(false)
+        }
+      } else {
+        video.pause()
+      }
+    }
 
     const observer = new IntersectionObserver(
       entries => {
         entries.forEach(e => {
-          const video = e.target
-          if (e.isIntersecting) {
-            video.play().catch(() => {})
-            const idx = videoRefs.current.indexOf(video)
-            if (idx !== -1) setActiveIndex(idx)
-            setPaused(false)
-          } else {
-            video.pause()
+          // Find which index this video belongs to
+          const mIdx = mobileRefs.current.indexOf(e.target)
+          const dIdx = desktopRefs.current.indexOf(e.target)
+          const index = mIdx !== -1 ? mIdx : dIdx
+          if (index !== -1) {
+            handleEntry(e.target, e.isIntersecting, index)
           }
         })
       },
-      { threshold: 0.5 }
+      { threshold: 0.6 }
     )
 
-    videoRefs.current.forEach(v => v && observer.observe(v))
-    return () => videoRefs.current.forEach(v => v && observer.unobserve(v))
+    // Observe all mobile refs
+    mobileRefs.current.forEach(v => v && observer.observe(v))
+    // Observe all desktop refs
+    desktopRefs.current.forEach(v => v && observer.observe(v))
+
+    return () => observer.disconnect()
   }, [reels])
 
   const updateReel = (id, patch) =>
@@ -121,22 +152,72 @@ export default function Reels() {
     } catch (err) { console.log(err) }
   }
 
-  const handleShare = (reel) => {
-    navigate("/messages", { state: { shareReel: reel } })
-  }
+  const handleShare = (reel) => navigate("/messages", { state: { shareReel: reel } })
 
   const togglePause = (index) => {
-    const video = videoRefs.current[index]
+    const video = getActiveVideo(index)
     if (!video) return
     if (video.paused) { video.play(); setPaused(false) }
     else { video.pause(); setPaused(true) }
   }
 
+  // ── Shared UI pieces ──
+  const UserInfo = ({ reel }) => (
+    <div>
+      <div className="flex items-center gap-2 mb-1.5">
+        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-pink-500 to-yellow-400 p-0.5 flex-shrink-0">
+          <div className="w-full h-full rounded-full bg-black overflow-hidden flex items-center justify-center">
+            {reel.user?.profilePic
+              ? <img src={reel.user.profilePic} className="w-full h-full object-cover" alt="" />
+              : <span className="text-white text-sm font-bold">{reel.user?.username?.[0]?.toUpperCase() || "U"}</span>}
+          </div>
+        </div>
+        <span className="text-white font-semibold text-sm drop-shadow">{reel.user?.username || "user"}</span>
+        <button className="border border-white/80 text-white text-xs font-semibold px-2.5 py-0.5 rounded-full hover:bg-white hover:text-black transition-all">
+          Follow
+        </button>
+      </div>
+      {reel.caption && <p className="text-white text-sm leading-snug line-clamp-2 mb-1.5">{reel.caption}</p>}
+      <div className="flex items-center gap-1.5">
+        <span>🎵</span>
+        <span className="text-white/80 text-xs truncate">Original Audio • {reel.user?.username || "user"}</span>
+      </div>
+    </div>
+  )
+
+  const ActionBar = ({ reel, s, vertical = true }) => (
+    <div className={`flex ${vertical ? "flex-col" : "flex-row"} items-center gap-5`}>
+      <button onClick={() => handleLike(reel._id)} className="flex flex-col items-center gap-0.5 group">
+        <span className="p-1.5 rounded-full group-hover:bg-white/10 transition group-active:scale-90">
+          {s.liked ? <FaHeart className="text-red-500 w-7 h-7 drop-shadow" /> : <FiHeart className="text-white w-7 h-7 drop-shadow" />}
+        </span>
+        <span className="text-white text-xs font-semibold">{s.likeCount}</span>
+      </button>
+      <button onClick={() => openComments(reel._id)} className="flex flex-col items-center gap-0.5 group">
+        <span className="p-1.5 rounded-full group-hover:bg-white/10 transition group-active:scale-90">
+          <FiMessageCircle className="text-white w-7 h-7 drop-shadow" />
+        </span>
+        <span className="text-white text-xs font-semibold">{comments[reel._id]?.length || 0}</span>
+      </button>
+      <button onClick={() => handleShare(reel)} className="flex flex-col items-center gap-0.5 group">
+        <span className="p-1.5 rounded-full group-hover:bg-white/10 transition group-active:scale-90">
+          <FiSend className="text-white w-7 h-7 drop-shadow" />
+        </span>
+        <span className="text-white text-xs font-semibold">Share</span>
+      </button>
+      <button onClick={() => handleSave(reel._id)} className="flex flex-col items-center gap-0.5 group">
+        <span className="p-1.5 rounded-full group-hover:bg-white/10 transition group-active:scale-90">
+          {s.saved ? <FaBookmark className="text-yellow-400 w-6 h-6" /> : <FiBookmark className="text-white w-6 h-6" />}
+        </span>
+        <span className="text-white text-xs font-semibold">Save</span>
+      </button>
+    </div>
+  )
+
   return (
     <div className="flex bg-black min-h-screen">
       <Navbar />
 
-      {/* ── Scroll container ── */}
       <div
         className="flex-1 md:ml-64 overflow-y-scroll snap-y snap-mandatory"
         style={{ height: "100dvh", scrollbarWidth: "none", msOverflowStyle: "none" }}
@@ -146,13 +227,6 @@ export default function Reels() {
           const isActive = activeIndex === index
 
           return (
-            /*
-              ONE snap section per reel.
-              Mobile  → video fills full screen, actions overlaid on right
-              Desktop → video is a centered 9:16 card, actions are to its right
-              
-              KEY: only ONE <video> element per reel → no ref conflict → autoplay works everywhere
-            */
             <div
               key={reel._id}
               data-snap
@@ -160,23 +234,16 @@ export default function Reels() {
               style={{ height: "100dvh" }}
             >
 
-              {/* ════════════ MOBILE wrapper ════════════
-                  Full screen — video is 100% w × 100% h
-              */}
+              {/* ══════════════ MOBILE (hidden on md+) ══════════════ */}
               <div className="relative w-full h-full md:hidden">
-
-                {/* ── SINGLE VIDEO ── */}
                 <video
-                  ref={el => { videoRefs.current[index] = el }}
+                  ref={el => { mobileRefs.current[index] = el }}
                   src={reel.media}
                   className="w-full h-full object-cover"
-                  loop
-                  muted={muted}
-                  playsInline
+                  loop muted={muted} playsInline
                   onClick={() => togglePause(index)}
                 />
 
-                {/* Pause indicator */}
                 {paused && isActive && (
                   <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
                     <div className="bg-black/40 rounded-full p-5">
@@ -185,10 +252,8 @@ export default function Reels() {
                   </div>
                 )}
 
-                {/* Gradient */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/5 to-transparent pointer-events-none" />
 
-                {/* Mute */}
                 <button
                   onClick={() => setMuted(!muted)}
                   className="absolute top-4 right-4 bg-black/40 backdrop-blur-sm p-2.5 rounded-full text-white z-10"
@@ -196,56 +261,18 @@ export default function Reels() {
                   {muted ? <FiVolumeX size={18} /> : <FiVolume2 size={18} />}
                 </button>
 
-                {/* Right actions */}
-                <div className="absolute right-3 bottom-32 z-10 flex flex-col items-center gap-5">
-                  <button onClick={() => handleLike(reel._id)} className="flex flex-col items-center gap-0.5">
-                    {s.liked ? <FaHeart className="text-red-500 w-7 h-7 drop-shadow" /> : <FiHeart className="text-white w-7 h-7 drop-shadow" />}
-                    <span className="text-white text-xs font-semibold">{s.likeCount}</span>
-                  </button>
-                  <button onClick={() => openComments(reel._id)} className="flex flex-col items-center gap-0.5">
-                    <FiMessageCircle className="text-white w-7 h-7 drop-shadow" />
-                    <span className="text-white text-xs font-semibold">{comments[reel._id]?.length || 0}</span>
-                  </button>
-                  <button onClick={() => handleShare(reel)} className="flex flex-col items-center gap-0.5">
-                    <FiSend className="text-white w-7 h-7 drop-shadow" />
-                    <span className="text-white text-xs font-semibold">Share</span>
-                  </button>
-                  <button onClick={() => handleSave(reel._id)} className="flex flex-col items-center gap-0.5">
-                    {s.saved ? <FaBookmark className="text-yellow-400 w-6 h-6" /> : <FiBookmark className="text-white w-6 h-6" />}
-                    <span className="text-white text-xs font-semibold">Save</span>
-                  </button>
+                <div className="absolute right-3 bottom-32 z-10">
+                  <ActionBar reel={reel} s={s} vertical={true} />
                 </div>
 
-                {/* Bottom info */}
                 <div className="absolute bottom-8 left-4 right-20 z-10">
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-pink-500 to-yellow-400 p-0.5 flex-shrink-0">
-                      <div className="w-full h-full rounded-full bg-black overflow-hidden flex items-center justify-center">
-                        {reel.user?.profilePic
-                          ? <img src={reel.user.profilePic} className="w-full h-full object-cover" alt="" />
-                          : <span className="text-white text-sm font-bold">{reel.user?.username?.[0]?.toUpperCase() || "U"}</span>}
-                      </div>
-                    </div>
-                    <span className="text-white font-semibold text-sm">{reel.user?.username || "user"}</span>
-                    <button className="border border-white/80 text-white text-xs font-semibold px-2.5 py-0.5 rounded-full">Follow</button>
-                  </div>
-                  {reel.caption && <p className="text-white text-sm leading-snug line-clamp-2 mb-1.5">{reel.caption}</p>}
-                  <div className="flex items-center gap-1.5">
-                    <span>🎵</span>
-                    <span className="text-white/80 text-xs truncate">Original Audio • {reel.user?.username || "user"}</span>
-                  </div>
+                  <UserInfo reel={reel} />
                 </div>
               </div>
 
-              {/* ════════════ DESKTOP wrapper ════════════
-                  9:16 card centered + actions to the right
-                  Still uses the SAME video ref — but we render
-                  a fresh <video> element here (desktop only visible)
-                  so IntersectionObserver works on the visible one.
-              ════════════ */}
+              {/* ══════════════ DESKTOP (hidden on mobile) ══════════════ */}
               <div className="hidden md:flex items-center justify-center gap-6 w-full h-full">
 
-                {/* 9:16 card */}
                 <div
                   className="relative flex-shrink-0 rounded-2xl overflow-hidden bg-black shadow-2xl"
                   style={{
@@ -253,13 +280,8 @@ export default function Reels() {
                     width: "calc(min(88vh, 780px) * 9 / 16)",
                   }}
                 >
-                  {/*
-                    Desktop video — separate element so the observer
-                    can target whichever is actually visible on screen.
-                    We store it in a parallel ref array.
-                  */}
                   <video
-                    ref={el => { videoRefs.current[index] = el }}
+                    ref={el => { desktopRefs.current[index] = el }}
                     src={reel.media}
                     className="w-full h-full object-cover"
                     loop muted={muted} playsInline
@@ -284,52 +306,14 @@ export default function Reels() {
                   </button>
 
                   <div className="absolute bottom-5 left-4 right-4 z-10">
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <div className="w-9 h-9 rounded-full bg-gradient-to-br from-pink-500 to-yellow-400 p-0.5 flex-shrink-0">
-                        <div className="w-full h-full rounded-full bg-black overflow-hidden flex items-center justify-center">
-                          {reel.user?.profilePic
-                            ? <img src={reel.user.profilePic} className="w-full h-full object-cover" alt="" />
-                            : <span className="text-white text-sm font-bold">{reel.user?.username?.[0]?.toUpperCase() || "U"}</span>}
-                        </div>
-                      </div>
-                      <span className="text-white font-semibold text-sm">{reel.user?.username || "user"}</span>
-                      <button className="border border-white/80 text-white text-xs font-semibold px-2.5 py-0.5 rounded-full hover:bg-white hover:text-black transition-all">Follow</button>
-                    </div>
-                    {reel.caption && <p className="text-white text-sm leading-snug line-clamp-2 mb-1.5">{reel.caption}</p>}
-                    <div className="flex items-center gap-1.5">
-                      <span>🎵</span>
-                      <span className="text-white/80 text-xs truncate">Original Audio • {reel.user?.username || "user"}</span>
-                    </div>
+                    <UserInfo reel={reel} />
                   </div>
                 </div>
 
-                {/* Desktop right actions */}
                 <div className="flex flex-col items-center gap-6 flex-shrink-0">
-                  <button onClick={() => handleLike(reel._id)} className="flex flex-col items-center gap-1 group">
-                    <span className="p-2 rounded-full group-hover:bg-white/10 transition">
-                      {s.liked ? <FaHeart className="text-red-500 w-7 h-7" /> : <FiHeart className="text-white w-7 h-7" />}
-                    </span>
-                    <span className="text-white text-xs font-semibold">{s.likeCount}</span>
-                  </button>
-                  <button onClick={() => openComments(reel._id)} className="flex flex-col items-center gap-1 group">
-                    <span className="p-2 rounded-full group-hover:bg-white/10 transition">
-                      <FiMessageCircle className="text-white w-7 h-7" />
-                    </span>
-                    <span className="text-white text-xs font-semibold">{comments[reel._id]?.length || 0}</span>
-                  </button>
-                  <button onClick={() => handleShare(reel)} className="flex flex-col items-center gap-1 group">
-                    <span className="p-2 rounded-full group-hover:bg-white/10 transition">
-                      <FiSend className="text-white w-7 h-7" />
-                    </span>
-                    <span className="text-white text-xs font-semibold">Share</span>
-                  </button>
-                  <button onClick={() => handleSave(reel._id)} className="flex flex-col items-center gap-1 group">
-                    <span className="p-2 rounded-full group-hover:bg-white/10 transition">
-                      {s.saved ? <FaBookmark className="text-yellow-400 w-6 h-6" /> : <FiBookmark className="text-white w-6 h-6" />}
-                    </span>
-                    <span className="text-white text-xs font-semibold">Save</span>
-                  </button>
+                  <ActionBar reel={reel} s={s} vertical={true} />
                 </div>
+
               </div>
 
             </div>
@@ -346,7 +330,7 @@ export default function Reels() {
         )}
       </div>
 
-      {/* ── Comment Panel ── */}
+      {/* Comment Panel */}
       {commentPanel && (
         <>
           <div className="fixed inset-0 bg-black/50 z-40" onClick={() => setCommentPanel(null)} />
