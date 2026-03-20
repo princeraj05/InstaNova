@@ -5,19 +5,17 @@ import User from "../models/User.js"
 // ============================
 
 export const getProfile = async (req, res) => {
+  try {
 
-try{
+    const user = await User.findById(req.params.id)
+      .select("-password")
+      .populate("savedPosts")   // 🔥 IMPORTANT
 
-const user = await User.findById(req.params.id).select("-password")
+    res.json(user)
 
-res.json(user)
-
-}catch(err){
-
-res.status(500).json(err)
-
-}
-
+  } catch (err) {
+    res.status(500).json(err)
+  }
 }
 
 

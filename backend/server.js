@@ -50,12 +50,11 @@ app.use("/api/posts", postRoutes)
 app.use("/api/reels", reelsRoutes)
 
 // ==========================
-// 🔥 SOCKET SETUP (MERGED)
+// 🔥 SOCKET SETUP (FIXED)
 // ==========================
 
 const server = http.createServer(app)
 
-// 👉 EXPORT IO (IMPORTANT)
 let io
 export { io }
 
@@ -66,7 +65,7 @@ io = new Server(server, {
   }
 })
 
-// 🔥 ONLINE USERS SYSTEM
+// 🔥 ONLINE USERS
 let users = []
 
 const addUser = (userId, socketId) => {
@@ -92,7 +91,7 @@ io.on("connection", (socket) => {
     io.emit("getUsers", users)
   })
 
-  // ✅ SEND MESSAGE (REALTIME)
+  // ✅ 🔥 FIXED SEND MESSAGE (IMPORTANT)
   socket.on("sendMessage", ({ senderId, receiverId, text, conversationId }) => {
     const user = getUser(receiverId)
 
@@ -100,7 +99,7 @@ io.on("connection", (socket) => {
       io.to(user.socketId).emit("newMessage", {
         sender: senderId,
         text,
-        conversationId
+        conversationId   // 🔥 FIX ADDED
       })
     }
   })

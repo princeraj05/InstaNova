@@ -6,10 +6,11 @@ export const sendMessage = async (req, res) => {
     const newMessage = new Message(req.body)
     const savedMessage = await newMessage.save()
 
-    // 🔥 REALTIME EMIT
-    io.emit("newMessage", savedMessage)
+    const populated = await savedMessage.populate("reel")
 
-    res.json(savedMessage)
+    io.emit("newMessage", populated)
+
+    res.json(populated)
 
   } catch (err) {
     res.status(500).json(err)

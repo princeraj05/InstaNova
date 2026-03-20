@@ -2,29 +2,45 @@ import { useEffect, useState } from "react"
 import Navbar from "../components/Navbar"
 import API from "../api/axios"
 import { Link } from "react-router-dom"
-import { FiGrid, FiFilm, FiEdit2 } from "react-icons/fi"
+import { FiGrid, FiFilm, FiEdit2, FiBookmark } from "react-icons/fi"
 
 export default function Profile() {
   const [user, setUser] = useState({})
   const [posts, setPosts] = useState([])
+  const [savedPosts, setSavedPosts] = useState([]) // 🔥 NEW
   const [tab, setTab] = useState("posts")
   const userId = localStorage.getItem("userId")
 
   useEffect(() => {
     const fetchProfile = async () => {
-      try { const res = await API.get(`/user/${userId}`); setUser(res.data) }
-      catch (err) { console.log(err) }
+      try {
+        const res = await API.get(`/user/${userId}`)
+        setUser(res.data)
+        setSavedPosts(res.data.savedPosts || []) // 🔥 NEW
+      } catch (err) { console.log(err) }
     }
+
     const fetchPosts = async () => {
-      try { const res = await API.get(`/posts/user/${userId}`); setPosts(res.data) }
-      catch (err) { console.log(err) }
+      try {
+        const res = await API.get(`/posts/user/${userId}`)
+        setPosts(res.data)
+      } catch (err) { console.log(err) }
     }
-    if (userId) { fetchProfile(); fetchPosts() }
+
+    if (userId) {
+      fetchProfile()
+      fetchPosts()
+    }
   }, [userId])
 
   const imgPosts = posts.filter(p => p.mediaType !== "reel")
   const reelPosts = posts.filter(p => p.mediaType === "reel")
-  const displayed = tab === "posts" ? imgPosts : reelPosts
+
+  // 🔥 UPDATED DISPLAY LOGIC
+  const displayed =
+    tab === "posts" ? imgPosts :
+    tab === "reels" ? reelPosts :
+    savedPosts
 
   return (
     <div className="flex bg-gray-50 min-h-screen">
@@ -65,10 +81,18 @@ export default function Profile() {
                 ${tab === "posts" ? "border-indigo-500 text-indigo-600" : "border-transparent text-gray-400 hover:text-gray-600"}`}>
               <FiGrid size={15} /> Posts
             </button>
+
             <button onClick={() => setTab("reels")}
               className={`flex items-center gap-2 px-5 py-2.5 text-sm font-medium border-b-2 transition
                 ${tab === "reels" ? "border-indigo-500 text-indigo-600" : "border-transparent text-gray-400 hover:text-gray-600"}`}>
               <FiFilm size={15} /> Reels
+            </button>
+
+            {/* 🔥 NEW SAVED TAB */}
+            <button onClick={() => setTab("saved")}
+              className={`flex items-center gap-2 px-5 py-2.5 text-sm font-medium border-b-2 transition
+                ${tab === "saved" ? "border-indigo-500 text-indigo-600" : "border-transparent text-gray-400 hover:text-gray-600"}`}>
+              <FiBookmark size={15} /> Saved
             </button>
           </div>
 
