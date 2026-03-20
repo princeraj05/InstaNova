@@ -22,7 +22,12 @@ dotenv.config()
 
 const app = express()
 
-app.use(cors())
+// ✅ CORS FIX
+app.use(cors({
+  origin: "*",
+  methods: ["GET", "POST", "PUT", "DELETE"]
+}))
+
 app.use(express.json())
 
 // DB
@@ -39,6 +44,11 @@ if (!fs.existsSync(uploadsPath)) {
 
 app.use("/uploads", express.static(uploadsPath))
 
+// ✅ ROOT ROUTE (🔥 IMPORTANT FOR RENDER)
+app.get("/", (req, res) => {
+  res.send("API is running 🚀")
+})
+
 // routes
 app.use("/api/notifications", notificationRoutes)
 app.use("/api/messages", messageRoutes)
@@ -50,7 +60,7 @@ app.use("/api/posts", postRoutes)
 app.use("/api/reels", reelsRoutes)
 
 // ==========================
-// 🔥 SOCKET SETUP (FIXED)
+// 🔥 SOCKET SETUP
 // ==========================
 
 const server = http.createServer(app)
@@ -85,13 +95,11 @@ const removeUser = (socketId) => {
 io.on("connection", (socket) => {
   console.log("User connected:", socket.id)
 
-  // ✅ ADD USER
   socket.on("addUser", (userId) => {
     addUser(userId, socket.id)
     io.emit("getUsers", users)
   })
 
-  // ✅ 🔥 FIXED SEND MESSAGE (IMPORTANT)
   socket.on("sendMessage", ({ senderId, receiverId, text, conversationId }) => {
     const user = getUser(receiverId)
 
@@ -99,12 +107,11 @@ io.on("connection", (socket) => {
       io.to(user.socketId).emit("newMessage", {
         sender: senderId,
         text,
-        conversationId   // 🔥 FIX ADDED
+        conversationId
       })
     }
   })
 
-  // ❌ DISCONNECT
   socket.on("disconnect", () => {
     console.log("User disconnected:", socket.id)
     removeUser(socket.id)
