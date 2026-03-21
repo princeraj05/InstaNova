@@ -13,7 +13,7 @@ export default function More() {
       setLoading(true)
 
       // ✅ FIXED (no manual token needed)
-      await API.delete("/api/user/delete-account")
+      await API.delete("/user/delete-account")
 
       alert("Account deleted successfully 😢")
 
