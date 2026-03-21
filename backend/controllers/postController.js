@@ -80,6 +80,22 @@ export const getAllPosts = async (req, res) => {
 }
 
 // ==============================
+// 🔥 GET SAVED POSTS
+// ==============================
+export const getSavedPosts = async (req, res) => {
+  try {
+    const posts = await Post.find({ savedBy: req.params.userId })
+      .populate("user", "username profilePic")
+      .sort({ createdAt: -1 })
+
+    res.json(posts)
+  } catch (err) {
+    console.log(err)
+    res.status(500).json({ message: "Server error" })
+  }
+}
+
+// ==============================
 // ❤️ LIKE
 // ==============================
 export const toggleLikePost = async (req, res) => {

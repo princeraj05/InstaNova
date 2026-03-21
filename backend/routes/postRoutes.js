@@ -5,6 +5,7 @@ import {
   createPost,
   getUserPosts,
   getAllPosts,
+  getSavedPosts,
   toggleLikePost,
   toggleSavePost,
   getPostComments,
@@ -15,6 +16,9 @@ const router = express.Router()
 
 // ✅ CREATE POST
 router.post("/create", upload.single("media"), createPost)
+
+// ✅ GET SAVED POSTS — 🔥 /user/:id se pehle hona chahiye (order important!)
+router.get("/saved/:userId", getSavedPosts)
 
 // ✅ GET USER POSTS
 router.get("/user/:id", getUserPosts)
