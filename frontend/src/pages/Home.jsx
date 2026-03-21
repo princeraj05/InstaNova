@@ -68,9 +68,9 @@ export default function Home() {
   useEffect(() => {
     const states = {}
     posts.forEach(p => {
-      // 🔥 FIX: toString() comparison — ObjectId vs string mismatch fix
-      const likes = p.likes?.map(id => id.toString()) || []
-      const savedBy = p.savedBy?.map(id => id.toString()) || []
+      // 🔥 FIX: null check karo pehle, phir toString()
+      const likes = (p.likes || []).filter(Boolean).map(id => id.toString())
+      const savedBy = (p.savedBy || []).filter(Boolean).map(id => id.toString())
 
       states[p._id] = {
         liked: likes.includes(myId),
