@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
-import axios from "axios"
 import Navbar from "../components/Navbar"
+import API from "../api/axios"   // ✅ USE THIS
 
 export default function More() {
   const [showModal, setShowModal] = useState(false)
@@ -12,19 +12,12 @@ export default function More() {
     try {
       setLoading(true)
 
-      const token = localStorage.getItem("token")
-
-      await axios.delete("/api/user/delete-account", {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      })
+      // ✅ FIXED (no manual token needed)
+      await API.delete("/api/user/delete-account")
 
       alert("Account deleted successfully 😢")
 
-      // logout
       localStorage.removeItem("token")
-
       navigate("/login")
 
     } catch (error) {
@@ -43,7 +36,6 @@ export default function More() {
         <h2>More</h2>
         <p>Settings and more options</p>
 
-        {/* 🔥 DELETE BUTTON */}
         <button
           onClick={() => setShowModal(true)}
           style={{
@@ -59,7 +51,6 @@ export default function More() {
           Delete Account
         </button>
 
-        {/* 🔥 MODAL */}
         {showModal && (
           <div style={{
             position: "fixed",
