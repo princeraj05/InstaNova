@@ -56,10 +56,12 @@ export const createPost = async (req, res) => {
 export const getUserPosts = async (req, res) => {
   try {
     const posts = await Post.find({ user: req.params.id })
+      .populate("user", "username profilePic")
       .sort({ createdAt: -1 })
 
     res.json(posts)
-  } catch {
+  } catch (err) {
+    console.log(err)
     res.status(500).json({ message: "Server error" })
   }
 }
@@ -74,7 +76,8 @@ export const getAllPosts = async (req, res) => {
       .sort({ createdAt: -1 })
 
     res.json(posts)
-  } catch {
+  } catch (err) {
+    console.log(err)
     res.status(500).json({ message: "Server error" })
   }
 }
@@ -96,19 +99,26 @@ export const getSavedPosts = async (req, res) => {
 }
 
 // ==============================
-// ❤️ LIKE
+// ❤️ LIKE / UNLIKE
 // ==============================
 export const toggleLikePost = async (req, res) => {
   try {
     const post = await Post.findById(req.params.id)
-    const { userId } = req.body
+
+    // 🔥 FIX: userId body se lo, fallback req.userId (protect middleware)
+    const userId = req.body.userId || req.userId
 
     if (!post) return res.status(404).json({ message: "Post not found" })
+    if (!userId) return res.status(400).json({ message: "userId required" })
 
-    const index = post.likes.findIndex(id => id.toString() === userId)
+    const index = post.likes.findIndex(id => id.toString() === userId.toString())
 
-    if (index === -1) post.likes.push(userId)
-    else post.likes.splice(index, 1)
+    if (index === -1) {
+      // 🔥 FIX: string push nahi, ObjectId push karo
+      post.likes.push(new mongoose.Types.ObjectId(userId))
+    } else {
+      post.likes.splice(index, 1)
+    }
 
     await post.save()
 
@@ -117,33 +127,42 @@ export const toggleLikePost = async (req, res) => {
       likes: post.likes
     })
 
-  } catch {
+  } catch (err) {
+    console.log(err)
     res.status(500).json({ message: "Server error" })
   }
 }
 
 // ==============================
-// 🔖 SAVE
+// 🔖 SAVE / UNSAVE
 // ==============================
 export const toggleSavePost = async (req, res) => {
   try {
     const post = await Post.findById(req.params.id)
-    const { userId } = req.body
+
+    // 🔥 FIX: userId body se lo, fallback req.userId
+    const userId = req.body.userId || req.userId
 
     if (!post) return res.status(404).json({ message: "Post not found" })
+    if (!userId) return res.status(400).json({ message: "userId required" })
 
     if (!post.savedBy) post.savedBy = []
 
-    const index = post.savedBy.findIndex(id => id.toString() === userId)
+    const index = post.savedBy.findIndex(id => id.toString() === userId.toString())
 
-    if (index === -1) post.savedBy.push(userId)
-    else post.savedBy.splice(index, 1)
+    if (index === -1) {
+      // 🔥 FIX: ObjectId push karo
+      post.savedBy.push(new mongoose.Types.ObjectId(userId))
+    } else {
+      post.savedBy.splice(index, 1)
+    }
 
     await post.save()
 
     res.json({ saved: index === -1 })
 
-  } catch {
+  } catch (err) {
+    console.log(err)
     res.status(500).json({ message: "Server error" })
   }
 }
@@ -159,7 +178,8 @@ export const getPostComments = async (req, res) => {
 
     res.json(comments)
 
-  } catch {
+  } catch (err) {
+    console.log(err)
     res.status(500).json({ message: "Server error" })
   }
 }
@@ -184,7 +204,8 @@ export const addComment = async (req, res) => {
 
     res.json(populated)
 
-  } catch {
+  } catch (err) {
+    console.log(err)
     res.status(500).json({ message: "Server error" })
   }
 }

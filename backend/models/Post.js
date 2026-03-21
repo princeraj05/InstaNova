@@ -2,39 +2,47 @@ import mongoose from "mongoose"
 
 const postSchema = new mongoose.Schema({
 
-user:{
-type:mongoose.Schema.Types.ObjectId,
-ref:"User",
-required:true
-},
+  user: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true
+  },
 
-media:{
-type:String,
-required:true
-},
+  media: {
+    type: String,
+    required: true
+  },
 
-mediaType:{
-type:String,
-enum:["post","reel"],
-default:"post"
-},
+  mediaType: {
+    type: String,
+    enum: ["post", "reel"],
+    default: "post"
+  },
 
-caption:{
-type:String
-},
+  caption: {
+    type: String
+  },
 
-likes:[
-{
-type:mongoose.Schema.Types.ObjectId,
-ref:"User"
-}
-],
+  likes: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User"
+    }
+  ],
 
-createdAt:{
-type:Date,
-default:Date.now
-}
+  // 🔥 NEW — save/unsave ke liye
+  savedBy: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User"
+    }
+  ],
+
+  createdAt: {
+    type: Date,
+    default: Date.now
+  }
 
 })
 
-export default mongoose.model("Post",postSchema)
+export default mongoose.model("Post", postSchema)

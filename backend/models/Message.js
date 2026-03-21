@@ -12,11 +12,17 @@ const messageSchema = new mongoose.Schema({
   text: {
     type: String
   },
-
-  // 🔥 ADD THIS
+  // 🔥 Reel share
   reel: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Post"
+    ref: "Post",
+    default: null
+  },
+  // 🔥 Post share
+  post: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Post",
+    default: null
   }
 
 }, { timestamps: true })
