@@ -47,7 +47,7 @@ export default function Navbar() {
       {/* ── DESKTOP SIDEBAR ── */}
       <div className="hidden md:flex flex-col justify-between w-64 h-screen fixed left-0 top-0 border-r border-gray-100 bg-white px-4 py-6 z-30">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-8 px-3">Instagram</h1>
+          <h1 className="text-2xl font-bold text-gray-900 mb-8 px-3">InstaNova</h1>
           <nav className="flex flex-col gap-1">
             <NavLink to="/home" icon={FiHome} label="Home" />
             <NavLink to="/reels" icon={MdOutlineVideoLibrary} label="Reels" />
