@@ -10,7 +10,10 @@ export default function StoryBar() {
   const [uploading, setUploading] = useState(false)
 
   const storyInputRef = useRef(null)
+
+  // 🔥 me ko localStorage se sahi tarike se lo
   const me = JSON.parse(localStorage.getItem("user") || "{}")
+  const myId = me._id || me.id || localStorage.getItem("userId") || ""
 
   useEffect(() => {
     const fetchStories = async () => {
@@ -19,7 +22,8 @@ export default function StoryBar() {
 
         const groupedStories = {}
         data.forEach((s) => {
-          const uid = s.user._id || s.user
+          // 🔥 FIX: .toString() se ensure karo consistent string key
+          const uid = (s.user?._id || s.user || "").toString()
           if (!groupedStories[uid]) groupedStories[uid] = []
           groupedStories[uid].push(s)
         })
@@ -48,10 +52,11 @@ export default function StoryBar() {
       })
 
       // Turant grouped state me add
+      const uid = myId.toString()
       setGrouped(prev => {
         const updated = { ...prev }
-        if (!updated[me._id]) updated[me._id] = []
-        updated[me._id] = [data, ...updated[me._id]]
+        if (!updated[uid]) updated[uid] = []
+        updated[uid] = [data, ...updated[uid]]
         return updated
       })
 
@@ -60,16 +65,17 @@ export default function StoryBar() {
       alert("Story upload failed")
     } finally {
       setUploading(false)
-      // input reset karo taaki same file dobara select ho sake
       e.target.value = ""
     }
   }
 
-  // My stories (already posted)
-  const myStories = grouped[me._id] || []
+  const myIdStr = myId.toString()
 
-  // Other users stories (excluding me)
-  const otherStories = Object.entries(grouped).filter(([uid]) => uid !== me._id)
+  // 🔥 Apni stories
+  const myStories = grouped[myIdStr] || []
+
+  // 🔥 Dusron ki stories (apni exclude)
+  const otherStories = Object.entries(grouped).filter(([uid]) => uid !== myIdStr)
 
   return (
     <>
@@ -79,29 +85,29 @@ export default function StoryBar() {
         <div className="flex flex-col items-center shrink-0">
           <div className="relative">
 
-            {/* Click on pic = VIEW stories (if any) */}
+            {/* 🔥 Profile pic click = VIEW my stories */}
             <div
               onClick={() => {
                 if (myStories.length > 0) {
-                  setSelectedStories(myStories)
+                  setSelectedStories([...myStories])
                   setIndex(0)
                 }
               }}
               className={`w-16 h-16 rounded-full p-[2px] transition
                 ${myStories.length > 0
-                  ? "bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 cursor-pointer"
+                  ? "bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 cursor-pointer hover:opacity-90"
                   : "bg-gray-200 cursor-default"
                 }`}
             >
-              <div className="w-full h-full rounded-full border-2 border-white overflow-hidden">
+              <div className="w-full h-full rounded-full border-2 border-white overflow-hidden bg-gray-100">
                 <img
-                  src={me?.profilePic || `https://ui-avatars.com/api/?name=${me?.username}`}
+                  src={me?.profilePic || `https://ui-avatars.com/api/?name=${me?.username || "U"}`}
                   className="w-full h-full object-cover rounded-full"
                 />
               </div>
             </div>
 
-            {/* + button = UPLOAD new story */}
+            {/* 🔥 + button = UPLOAD */}
             <button
               onClick={(e) => {
                 e.stopPropagation()
@@ -122,7 +128,7 @@ export default function StoryBar() {
           </div>
 
           <p className="text-xs mt-1 text-gray-500 w-16 text-center truncate">
-            {myStories.length > 0 ? `Your story` : "Add story"}
+            {myStories.length > 0 ? "Your story" : "Add story"}
           </p>
 
           <input
@@ -134,7 +140,7 @@ export default function StoryBar() {
           />
         </div>
 
-        {/* OTHER USERS STORIES */}
+        {/* 🔥 OTHER USERS STORIES */}
         {otherStories.map(([uid, userStories]) => {
           const first = userStories[0]
           const seen = seenStories.includes(uid)
@@ -144,7 +150,7 @@ export default function StoryBar() {
               key={uid}
               className="flex flex-col items-center cursor-pointer shrink-0"
               onClick={() => {
-                setSelectedStories(userStories)
+                setSelectedStories([...userStories])
                 setIndex(0)
                 setSeenStories(prev => [...new Set([...prev, uid])])
               }}
@@ -166,13 +172,16 @@ export default function StoryBar() {
 
       </div>
 
-      {/* STORY VIEWER */}
-      {selectedStories && (
+      {/* 🔥 STORY VIEWER */}
+      {selectedStories && selectedStories.length > 0 && (
         <StoryViewer
           stories={selectedStories}
           currentIndex={index}
           setIndex={setIndex}
-          onClose={() => setSelectedStories(null)}
+          onClose={() => {
+            setSelectedStories(null)
+            setIndex(0)
+          }}
         />
       )}
     </>
