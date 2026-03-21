@@ -1,23 +1,116 @@
+import { useState } from "react"
+import { useNavigate } from "react-router-dom"
+import axios from "axios"
 import Navbar from "../components/Navbar"
 
-export default function More(){
+export default function More() {
+  const [showModal, setShowModal] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const navigate = useNavigate()
 
-return(
+  const handleDelete = async () => {
+    try {
+      setLoading(true)
 
-<div style={{display:"flex"}}>
+      const token = localStorage.getItem("token")
 
-<Navbar/>
+      await axios.delete("/api/user/delete-account", {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      })
 
-<div style={{marginLeft:"250px",padding:"40px"}}>
+      alert("Account deleted successfully 😢")
 
-<h2>More</h2>
+      // logout
+      localStorage.removeItem("token")
 
-<p>Settings and more options</p>
+      navigate("/login")
 
-</div>
+    } catch (error) {
+      console.error(error)
+      alert("Error deleting account")
+    } finally {
+      setLoading(false)
+    }
+  }
 
-</div>
+  return (
+    <div style={{ display: "flex" }}>
+      <Navbar />
 
-)
+      <div style={{ marginLeft: "250px", padding: "40px" }}>
+        <h2>More</h2>
+        <p>Settings and more options</p>
 
+        {/* 🔥 DELETE BUTTON */}
+        <button
+          onClick={() => setShowModal(true)}
+          style={{
+            background: "red",
+            color: "white",
+            padding: "10px 20px",
+            border: "none",
+            marginTop: "20px",
+            cursor: "pointer",
+            borderRadius: "5px"
+          }}
+        >
+          Delete Account
+        </button>
+
+        {/* 🔥 MODAL */}
+        {showModal && (
+          <div style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "100%",
+            background: "rgba(0,0,0,0.6)",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center"
+          }}>
+            <div style={{
+              background: "#fff",
+              padding: "30px",
+              borderRadius: "10px",
+              width: "300px",
+              textAlign: "center"
+            }}>
+              <h3>⚠️ Delete Account</h3>
+              <p>This action cannot be undone!</p>
+
+              <button
+                onClick={handleDelete}
+                disabled={loading}
+                style={{
+                  background: "red",
+                  color: "white",
+                  padding: "10px",
+                  margin: "10px",
+                  border: "none",
+                  borderRadius: "5px"
+                }}
+              >
+                {loading ? "Deleting..." : "Delete Permanently"}
+              </button>
+
+              <button
+                onClick={() => setShowModal(false)}
+                style={{
+                  padding: "10px",
+                  border: "1px solid gray",
+                  borderRadius: "5px"
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  )
 }

@@ -1,20 +1,30 @@
 import express from "express"
-import upload from "../middleware/upload.js"   // ✅ Cloudinary upload
+import upload from "../middleware/upload.js"
 
+// 🔥 IMPORT ALL CONTROLLERS (including delete)
 import {
   getProfile,
   updateProfile,
   followUser,
-  unfollowUser
+  unfollowUser,
+  deleteAccount   // ✅ NEW
 } from "../controllers/userController.js"
+
+import authMiddleware from "../middleware/authMiddleware.js" // ✅ NEW
 
 const router = express.Router()
 
+// 👤 PROFILE
 router.get("/:id", getProfile)
 
-router.put("/:id", upload.single("profilePic"), updateProfile) // ✅ FIXED
+// ✏️ UPDATE PROFILE
+router.put("/:id", authMiddleware, upload.single("profilePic"), updateProfile)
 
-router.put("/follow/:id", followUser)
-router.put("/unfollow/:id", unfollowUser)
+// ❤️ FOLLOW / UNFOLLOW
+router.put("/follow/:id", authMiddleware, followUser)
+router.put("/unfollow/:id", authMiddleware, unfollowUser)
+
+// 🔥 DELETE ACCOUNT (MOST IMPORTANT)
+router.delete("/delete-account", authMiddleware, deleteAccount)
 
 export default router
