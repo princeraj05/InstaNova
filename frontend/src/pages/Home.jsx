@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react"
-import { useNavigate } from "react-router-dom" // ✅ ADD
+import { useNavigate } from "react-router-dom"
 import Navbar from "../components/Navbar"
 import API from "../api/axios"
 import { io } from "socket.io-client"
@@ -10,7 +10,7 @@ import {
   FiMessageCircle,
   FiSend,
   FiBookmark,
-  FiBell // ✅ ADD
+  FiBell
 } from "react-icons/fi"
 import { FaHeart, FaBookmark } from "react-icons/fa"
 
@@ -27,7 +27,7 @@ export default function Home() {
   const [notifications, setNotifications] = useState([])
 
   const videoRefs = useRef([])
-  const navigate = useNavigate() // ✅ ADD
+  const navigate = useNavigate()
 
   const me = JSON.parse(localStorage.getItem("user") || "{}")
 
@@ -130,6 +130,11 @@ export default function Home() {
     } catch (err) { console.log(err) }
   }
 
+  // ================= 🔥 SHARE POST =================
+  const handleShare = (post) => {
+    navigate("/messages", { state: { sharePost: post } })
+  }
+
   // ================= COMMENTS =================
   const openComments = async (id) => {
     setCommentPanel(id)
@@ -229,7 +234,10 @@ export default function Home() {
                         <FiMessageCircle />
                       </button>
 
-                      <FiSend />
+                      {/* 🔥 SHARE BUTTON */}
+                      <button onClick={() => handleShare(post)}>
+                        <FiSend />
+                      </button>
                     </div>
 
                     <button onClick={() => handleSave(post._id)}>
@@ -249,7 +257,7 @@ export default function Home() {
         </div>
       </div>
 
-      {/* ================= 🔥 NOTIFICATION SIDEBAR ================= */}
+      {/* ================= NOTIFICATION SIDEBAR ================= */}
       <div className="hidden lg:block w-80 p-4 border-l bg-white">
         <h3 className="font-bold mb-4">Notifications</h3>
 

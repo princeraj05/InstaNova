@@ -12,7 +12,6 @@ export default function Profile() {
   const [tab, setTab] = useState("posts")
   const [uploading, setUploading] = useState(false)
 
-  // 🔥 MY STORIES
   const [myStories, setMyStories] = useState([])
   const [viewerOpen, setViewerOpen] = useState(false)
   const [storyIndex, setStoryIndex] = useState(0)
@@ -26,7 +25,6 @@ export default function Profile() {
       try {
         const res = await API.get(`/user/${userId}`)
         setUser(res.data)
-        setSavedPosts(res.data.savedPosts || [])
       } catch (err) { console.log(err) }
     }
 
@@ -35,6 +33,20 @@ export default function Profile() {
         const res = await API.get(`/posts/user/${userId}`)
         setPosts(res.data)
       } catch (err) { console.log(err) }
+    }
+
+    // 🔥 Saved posts — full post objects
+    const fetchSavedPosts = async () => {
+      try {
+        const res = await API.get(`/posts/saved/${userId}`)
+        setSavedPosts(res.data)
+      } catch (err) {
+        // fallback: get from user.savedPosts if API not available
+        try {
+          const res = await API.get(`/user/${userId}`)
+          setSavedPosts(res.data.savedPosts || [])
+        } catch { console.log(err) }
+      }
     }
 
     const fetchMyStories = async () => {
@@ -50,6 +62,7 @@ export default function Profile() {
     if (userId) {
       fetchProfile()
       fetchPosts()
+      fetchSavedPosts()
       fetchMyStories()
     }
   }, [userId])
@@ -87,7 +100,6 @@ export default function Profile() {
     tab === "reels" ? reelPosts :
     savedPosts
 
-  // 🔥 Reel click handler — navigate to /reels?reelId=xxx
   const handleReelClick = (reelId) => {
     navigate(`/reels?reelId=${reelId}`)
   }
@@ -215,8 +227,8 @@ export default function Profile() {
           {/* Grid */}
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             {displayed.map(post => {
+              if (!post?._id) return null
 
-              // 🔥 REEL — click karo to navigate to reels page
               if (post.mediaType === "reel") {
                 return (
                   <div
@@ -225,15 +237,11 @@ export default function Profile() {
                     onClick={() => handleReelClick(post._id)}
                   >
                     <video src={post.media} className="w-full h-full object-cover" />
-
-                    {/* Overlay on hover */}
                     <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
                       <div className="w-10 h-10 bg-white/30 rounded-full flex items-center justify-center backdrop-blur-sm">
                         <FiFilm size={18} className="text-white" />
                       </div>
                     </div>
-
-                    {/* Always visible play icon */}
                     <div className="absolute top-2 right-2">
                       <FiFilm size={14} className="text-white drop-shadow" />
                     </div>
@@ -241,7 +249,6 @@ export default function Profile() {
                 )
               }
 
-              // 🔥 IMAGE POST
               return (
                 <div key={post._id} className="rounded-xl overflow-hidden aspect-square bg-gray-100">
                   <img
