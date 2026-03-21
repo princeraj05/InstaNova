@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import Navbar from "../components/Navbar"
-import API from "../api/axios"   // ✅ USE THIS
+import API from "../api/axios"
 
 export default function More() {
   const [showModal, setShowModal] = useState(false)
@@ -12,13 +12,16 @@ export default function More() {
     try {
       setLoading(true)
 
-      // ✅ FIXED (no manual token needed)
       await API.delete("/user/delete-account")
 
       alert("Account deleted successfully 😢")
 
+      // 🔥 logout
       localStorage.removeItem("token")
-      navigate("/login")
+      localStorage.removeItem("user")
+
+      // ✅ FIX HERE
+      navigate("/")  
 
     } catch (error) {
       console.error(error)
