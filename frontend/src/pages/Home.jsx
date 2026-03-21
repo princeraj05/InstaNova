@@ -29,7 +29,7 @@ export default function Home() {
   const navigate = useNavigate()
 
   const me = JSON.parse(localStorage.getItem("user") || "{}")
-  const myId = (me._id || me.id || "").toString()
+  const myId = (me._id || me.id || localStorage.getItem("userId") || "").toString()
 
   // ================= FETCH POSTS =================
   useEffect(() => {
