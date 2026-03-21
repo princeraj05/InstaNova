@@ -130,11 +130,10 @@ export const unfollowUser = async (req, res) => {
 // ============================
 // 🔥 DELETE ACCOUNT (NEW FEATURE)
 // ============================
-
 export const deleteAccount = async (req, res) => {
   try {
 
-    const userId = req.user.id
+    const userId = req.userId   // ✅ FIXED
 
     // 🔥 1. Get all posts
     const posts = await Post.find({ user: userId })
@@ -157,7 +156,7 @@ export const deleteAccount = async (req, res) => {
       $or: [{ sender: userId }, { receiver: userId }]
     })
 
-    // 🔥 5. Remove from followers/following
+    // 🔥 5. Remove followers/following
     await User.updateMany(
       { followers: userId },
       { $pull: { followers: userId } }
@@ -168,7 +167,7 @@ export const deleteAccount = async (req, res) => {
       { $pull: { following: userId } }
     )
 
-    // 🔥 6. Delete profile pic from cloudinary
+    // 🔥 6. Delete profile pic
     const user = await User.findById(userId)
 
     if (user?.profilePicPublicId) {
@@ -184,7 +183,7 @@ export const deleteAccount = async (req, res) => {
 
   } catch (error) {
 
-    console.error(error)
+    console.error("DELETE ERROR:", error)
 
     res.status(500).json({
       message: "Server error"
