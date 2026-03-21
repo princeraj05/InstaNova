@@ -3,6 +3,7 @@ import Navbar from "../components/Navbar"
 import API from "../api/axios"
 import { Link } from "react-router-dom"
 import { FiGrid, FiFilm, FiEdit2, FiBookmark, FiPlus } from "react-icons/fi"
+import StoryViewer from "../components/StoryViewer"
 
 export default function Profile() {
   const [user, setUser] = useState({})
@@ -10,8 +11,13 @@ export default function Profile() {
   const [savedPosts, setSavedPosts] = useState([])
   const [tab, setTab] = useState("posts")
   const [uploading, setUploading] = useState(false)
-  const storyInputRef = useRef(null)
 
+  // 🔥 MY STORIES
+  const [myStories, setMyStories] = useState([])
+  const [viewerOpen, setViewerOpen] = useState(false)
+  const [storyIndex, setStoryIndex] = useState(0)
+
+  const storyInputRef = useRef(null)
   const userId = localStorage.getItem("userId")
 
   useEffect(() => {
@@ -30,9 +36,19 @@ export default function Profile() {
       } catch (err) { console.log(err) }
     }
 
+    // 🔥 FETCH MY STORIES ONLY
+    const fetchMyStories = async () => {
+      try {
+        const { data } = await API.get("/stories")
+        const mine = data.filter(s => s.user._id === userId || s.user === userId)
+        setMyStories(mine)
+      } catch (err) { console.log(err) }
+    }
+
     if (userId) {
       fetchProfile()
       fetchPosts()
+      fetchMyStories()
     }
   }, [userId])
 
@@ -46,10 +62,12 @@ export default function Profile() {
       const formData = new FormData()
       formData.append("media", file)
 
-      await API.post("/stories", formData, {
+      const { data } = await API.post("/stories", formData, {
         headers: { "Content-Type": "multipart/form-data" }
       })
 
+      // 🔥 Turant local state me add karo
+      setMyStories(prev => [data, ...prev])
       alert("Story uploaded! ✅")
     } catch (err) {
       console.log(err)
@@ -77,11 +95,23 @@ export default function Profile() {
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-5">
             <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5">
 
-              {/* 🔥 PROFILE PIC + ADD STORY BUTTON */}
+              {/* 🔥 PROFILE PIC + STORY */}
               <div className="relative flex-shrink-0">
 
-                {/* Gradient ring (like Instagram story ring) */}
-                <div className="w-24 h-24 md:w-28 md:h-28 rounded-full p-[3px] bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600">
+                {/* Gradient ring — click to VIEW stories */}
+                <div
+                  onClick={() => {
+                    if (myStories.length > 0) {
+                      setStoryIndex(0)
+                      setViewerOpen(true)
+                    }
+                  }}
+                  className={`w-24 h-24 md:w-28 md:h-28 rounded-full p-[3px] transition
+                    ${myStories.length > 0
+                      ? "bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 cursor-pointer hover:opacity-90"
+                      : "bg-gray-300 cursor-default"
+                    }`}
+                >
                   <div className="w-full h-full rounded-full border-2 border-white overflow-hidden">
                     <img
                       src={user.profilePic || `https://ui-avatars.com/api/?name=${user.username}&background=6366f1&color=fff&size=120`}
@@ -90,7 +120,14 @@ export default function Profile() {
                   </div>
                 </div>
 
-                {/* 🔥 + Button */}
+                {/* Story count badge */}
+                {myStories.length > 0 && (
+                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-pink-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-white">
+                    {myStories.length}
+                  </span>
+                )}
+
+                {/* 🔥 + Upload button */}
                 <button
                   onClick={() => storyInputRef.current.click()}
                   disabled={uploading}
@@ -143,6 +180,13 @@ export default function Profile() {
                 </div>
 
                 {user.bio && <p className="text-sm text-gray-600 max-w-sm">{user.bio}</p>}
+
+                {/* Story hint */}
+                <p className="text-xs text-gray-400 mt-1">
+                  {myStories.length > 0
+                    ? `${myStories.length} active stor${myStories.length > 1 ? "ies" : "y"} · tap photo to view`
+                    : "Tap + to add your story"}
+                </p>
               </div>
             </div>
           </div>
@@ -154,13 +198,11 @@ export default function Profile() {
                 ${tab === "posts" ? "border-indigo-500 text-indigo-600" : "border-transparent text-gray-400 hover:text-gray-600"}`}>
               <FiGrid size={15} /> Posts
             </button>
-
             <button onClick={() => setTab("reels")}
               className={`flex items-center gap-2 px-5 py-2.5 text-sm font-medium border-b-2 transition
                 ${tab === "reels" ? "border-indigo-500 text-indigo-600" : "border-transparent text-gray-400 hover:text-gray-600"}`}>
               <FiFilm size={15} /> Reels
             </button>
-
             <button onClick={() => setTab("saved")}
               className={`flex items-center gap-2 px-5 py-2.5 text-sm font-medium border-b-2 transition
                 ${tab === "saved" ? "border-indigo-500 text-indigo-600" : "border-transparent text-gray-400 hover:text-gray-600"}`}>
@@ -196,6 +238,16 @@ export default function Profile() {
 
         </div>
       </div>
+
+      {/* 🔥 STORY VIEWER */}
+      {viewerOpen && myStories.length > 0 && (
+        <StoryViewer
+          stories={myStories}
+          currentIndex={storyIndex}
+          setIndex={setStoryIndex}
+          onClose={() => setViewerOpen(false)}
+        />
+      )}
     </div>
   )
 }
