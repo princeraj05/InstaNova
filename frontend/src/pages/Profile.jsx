@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from "react"
 import Navbar from "../components/Navbar"
 import API from "../api/axios"
-import { Link } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
 import { FiGrid, FiFilm, FiEdit2, FiBookmark, FiPlus } from "react-icons/fi"
 import StoryViewer from "../components/StoryViewer"
 
@@ -19,6 +19,7 @@ export default function Profile() {
 
   const storyInputRef = useRef(null)
   const userId = localStorage.getItem("userId")
+  const navigate = useNavigate()
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -36,11 +37,12 @@ export default function Profile() {
       } catch (err) { console.log(err) }
     }
 
-    // 🔥 FETCH MY STORIES ONLY
     const fetchMyStories = async () => {
       try {
         const { data } = await API.get("/stories")
-        const mine = data.filter(s => s.user._id === userId || s.user === userId)
+        const mine = data.filter(s =>
+          (s.user?._id || s.user || "").toString() === userId?.toString()
+        )
         setMyStories(mine)
       } catch (err) { console.log(err) }
     }
@@ -66,7 +68,6 @@ export default function Profile() {
         headers: { "Content-Type": "multipart/form-data" }
       })
 
-      // 🔥 Turant local state me add karo
       setMyStories(prev => [data, ...prev])
       alert("Story uploaded! ✅")
     } catch (err) {
@@ -74,6 +75,7 @@ export default function Profile() {
       alert("Failed to upload story")
     } finally {
       setUploading(false)
+      e.target.value = ""
     }
   }
 
@@ -85,6 +87,11 @@ export default function Profile() {
     tab === "reels" ? reelPosts :
     savedPosts
 
+  // 🔥 Reel click handler — navigate to /reels?reelId=xxx
+  const handleReelClick = (reelId) => {
+    navigate(`/reels?reelId=${reelId}`)
+  }
+
   return (
     <div className="flex bg-gray-50 min-h-screen">
       <Navbar />
@@ -95,10 +102,9 @@ export default function Profile() {
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-5">
             <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5">
 
-              {/* 🔥 PROFILE PIC + STORY */}
+              {/* PROFILE PIC + STORY */}
               <div className="relative flex-shrink-0">
 
-                {/* Gradient ring — click to VIEW stories */}
                 <div
                   onClick={() => {
                     if (myStories.length > 0) {
@@ -120,14 +126,12 @@ export default function Profile() {
                   </div>
                 </div>
 
-                {/* Story count badge */}
                 {myStories.length > 0 && (
                   <span className="absolute -top-1 -right-1 w-5 h-5 bg-pink-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-white">
                     {myStories.length}
                   </span>
                 )}
 
-                {/* 🔥 + Upload button */}
                 <button
                   onClick={() => storyInputRef.current.click()}
                   disabled={uploading}
@@ -143,7 +147,6 @@ export default function Profile() {
                   )}
                 </button>
 
-                {/* Hidden file input */}
                 <input
                   ref={storyInputRef}
                   type="file"
@@ -181,7 +184,6 @@ export default function Profile() {
 
                 {user.bio && <p className="text-sm text-gray-600 max-w-sm">{user.bio}</p>}
 
-                {/* Story hint */}
                 <p className="text-xs text-gray-400 mt-1">
                   {myStories.length > 0
                     ? `${myStories.length} active stor${myStories.length > 1 ? "ies" : "y"} · tap photo to view`
@@ -212,22 +214,43 @@ export default function Profile() {
 
           {/* Grid */}
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-            {displayed.map(post => (
-              post.mediaType === "reel" ? (
-                <div key={post._id} className="relative rounded-xl overflow-hidden aspect-[9/16] bg-black">
-                  <video src={post.media} className="w-full h-full object-cover" />
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="w-10 h-10 bg-white/30 rounded-full flex items-center justify-center backdrop-blur-sm">
-                      <FiFilm size={18} className="text-white" />
+            {displayed.map(post => {
+
+              // 🔥 REEL — click karo to navigate to reels page
+              if (post.mediaType === "reel") {
+                return (
+                  <div
+                    key={post._id}
+                    className="relative rounded-xl overflow-hidden aspect-[9/16] bg-black cursor-pointer group"
+                    onClick={() => handleReelClick(post._id)}
+                  >
+                    <video src={post.media} className="w-full h-full object-cover" />
+
+                    {/* Overlay on hover */}
+                    <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
+                      <div className="w-10 h-10 bg-white/30 rounded-full flex items-center justify-center backdrop-blur-sm">
+                        <FiFilm size={18} className="text-white" />
+                      </div>
+                    </div>
+
+                    {/* Always visible play icon */}
+                    <div className="absolute top-2 right-2">
+                      <FiFilm size={14} className="text-white drop-shadow" />
                     </div>
                   </div>
-                </div>
-              ) : (
+                )
+              }
+
+              // 🔥 IMAGE POST
+              return (
                 <div key={post._id} className="rounded-xl overflow-hidden aspect-square bg-gray-100">
-                  <img src={post.media} className="w-full h-full object-cover hover:scale-105 transition duration-300" />
+                  <img
+                    src={post.media}
+                    className="w-full h-full object-cover hover:scale-105 transition duration-300"
+                  />
                 </div>
               )
-            ))}
+            })}
           </div>
 
           {displayed.length === 0 && (
@@ -239,7 +262,7 @@ export default function Profile() {
         </div>
       </div>
 
-      {/* 🔥 STORY VIEWER */}
+      {/* STORY VIEWER */}
       {viewerOpen && myStories.length > 0 && (
         <StoryViewer
           stories={myStories}
