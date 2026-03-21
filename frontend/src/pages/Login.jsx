@@ -17,7 +17,7 @@ export default function Login() {
       localStorage.setItem("token", res.data.token)
       navigate("/home")
     } catch {
-      alert("Login failed")
+      alert("User not exist, please register first then login")
     } finally {
       setLoading(false)
     }
