@@ -9,7 +9,7 @@ export default function Messages() {
   const location = useLocation()
   const navigate = useNavigate()
   const sharedReel = location.state?.shareReel
-  const sharedPost = location.state?.sharePost   // 🔥 NEW
+  const sharedPost = location.state?.sharePost
   const userId = localStorage.getItem("userId")
 
   const [message, setMessage] = useState(
@@ -41,7 +41,7 @@ export default function Messages() {
     socket.current = io(import.meta.env.VITE_SERVER_URL, { transports: ["websocket"] })
     socket.current.emit("addUser", userId)
     socket.current.on("newMessage", (data) => {
-      if (data.conversationId === conversationRef.current?._id) {
+      if (data.conversationId?.toString() === conversationRef.current?._id?.toString()) {
         setMessages(prev => {
           if (prev.some(m => m._id === data._id)) return prev
           return [...prev, data]
@@ -118,7 +118,7 @@ export default function Messages() {
         sender: userId,
         text: message,
         reel: sharedReel?._id || null,
-        post: sharedPost?._id || null,   // 🔥 NEW
+        post: sharedPost?._id || null,
       })
       setMessages(prev => prev.some(m => m._id === data._id) ? prev : [...prev, data])
       socket.current.emit("sendMessage", {
@@ -157,7 +157,7 @@ export default function Messages() {
     e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.username || "U")}&background=6366f1&color=fff&size=128&bold=true`
   }
 
-  // 🔥 Shared preview banner (post or reel)
+  // Shared preview banner
   const SharedPreview = () => {
     if (sharedPost) return (
       <div className="mx-3 mb-2 bg-indigo-50 border border-indigo-200 rounded-xl flex items-center gap-3 px-3 py-2 flex-shrink-0">
@@ -184,7 +184,7 @@ export default function Messages() {
     return null
   }
 
-  // 🔥 Message bubble — handles text, reel, post
+  // Message bubble
   const MessageBubble = ({ m, isMine, senderUser, isLastInGroup }) => (
     <div className={`flex items-end gap-2 ${isMine ? "flex-row-reverse" : "flex-row"}`}>
       <div className="flex-shrink-0 w-8">
@@ -194,11 +194,12 @@ export default function Messages() {
       </div>
       <div className={`flex flex-col gap-1 max-w-[65vw] md:max-w-sm lg:max-w-md ${isMine ? "items-end" : "items-start"}`}>
         <div className={`rounded-2xl overflow-hidden shadow-sm ${isMine ? "bg-indigo-500 text-white rounded-br-none" : "bg-white text-gray-800 rounded-bl-none border border-gray-100"}`}>
+
           {m.text && <p className="px-4 py-2.5 text-sm leading-relaxed break-words">{m.text}</p>}
 
-          {/* 🔥 SHARED POST in bubble */}
+          {/* 🔥 SHARED POST bubble */}
           {m.post && (
-            <div className="cursor-pointer group" onClick={() => {}}>
+            <div className="cursor-pointer">
               {m.post.media && (
                 <img src={m.post.media} className="w-full max-h-48 object-cover" />
               )}
@@ -215,7 +216,7 @@ export default function Messages() {
             </div>
           )}
 
-          {/* Reel in bubble */}
+          {/* 🔥 SHARED REEL bubble */}
           {m.reel && (
             <div onClick={() => navigate(`/reels?reelId=${m.reel._id || m.reel}`)} className="cursor-pointer group">
               {m.reel.media ? (
@@ -247,7 +248,6 @@ export default function Messages() {
     </div>
   )
 
-  // ── Input bar (shared) ──
   const InputBar = ({ px = "px-3" }) => (
     <div className={`flex-shrink-0 flex items-center gap-2 ${px} py-3 bg-white border-t border-gray-100`}>
       <img src={avatarSrc(me)} onError={e => avatarErr(e, me)} className="w-8 h-8 rounded-full object-cover flex-shrink-0" alt="me" />
@@ -262,7 +262,7 @@ export default function Messages() {
       <button
         onClick={sendMessage}
         disabled={sending || !message.trim()}
-        className="flex-shrink-0 w-10 h-10 flex items-center justify-center bg-indigo-500 hover:bg-indigo-600 active:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-full transition-colors"
+        className="flex-shrink-0 w-10 h-10 flex items-center justify-center bg-indigo-500 hover:bg-indigo-600 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-full transition-colors"
       >
         <svg className="w-4 h-4 ml-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
@@ -271,8 +271,7 @@ export default function Messages() {
     </div>
   )
 
-  // ── Sidebar list (shared between mobile/desktop) ──
-  const SidebarList = () => (
+  const SidebarContent = () => (
     <>
       {users.length > 0 && (
         <div className="border-b border-gray-100 flex-shrink-0">
@@ -326,7 +325,6 @@ export default function Messages() {
     </>
   )
 
-  // ── Search header (shared) ──
   const SearchHeader = () => (
     <div className="px-5 pt-6 pb-4 border-b border-gray-100 flex-shrink-0">
       <h2 className="text-2xl font-bold text-gray-900 mb-4">Messages</h2>
@@ -346,106 +344,76 @@ export default function Messages() {
     </div>
   )
 
+  // Chat panel content (shared mobile/desktop)
+  const ChatContent = ({ isMobile = false }) => (
+    selectedUser ? (
+      <>
+        <div className="flex items-center gap-3 px-3 py-3 bg-white border-b border-gray-100 shadow-sm flex-shrink-0">
+          {isMobile && (
+            <button onClick={() => setView("sidebar")} className="p-2 rounded-full hover:bg-gray-100 text-gray-600 transition flex-shrink-0">
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+          )}
+          <img src={avatarSrc(selectedUser)} onError={e => avatarErr(e, selectedUser)} className="w-10 h-10 rounded-full object-cover flex-shrink-0" alt={selectedUser.username} />
+          <div className="flex-1 min-w-0">
+            <p className="font-bold text-gray-900 text-sm truncate">{selectedUser.username}</p>
+            <p className="text-xs text-green-500 font-medium">Online</p>
+          </div>
+        </div>
+
+        <div className="flex-1 min-h-0 overflow-y-auto px-3 py-4 flex flex-col gap-4">
+          {messages.map((m, i) => {
+            // 🔥 FIX: toString() comparison
+            const isMine = (m.sender?._id || m.sender || "").toString() === userId?.toString()
+            const senderUser = isMine ? me : selectedUser
+            const isLastInGroup = i === messages.length - 1 || (messages[i + 1]?.sender?._id || messages[i + 1]?.sender || "").toString() !== (m.sender?._id || m.sender || "").toString()
+            return <MessageBubble key={m._id || i} m={m} isMine={isMine} senderUser={senderUser} isLastInGroup={isLastInGroup} />
+          })}
+          <div ref={messagesEndRef} />
+        </div>
+
+        <SharedPreview />
+        <InputBar px={isMobile ? "px-3" : "px-4"} />
+      </>
+    ) : (
+      <div className="flex-1 flex flex-col items-center justify-center text-gray-300 gap-3 p-6">
+        <div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center">
+          <svg className="w-10 h-10 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+          </svg>
+        </div>
+        <p className="text-gray-400 font-semibold">Select a chat</p>
+        {!isMobile && <p className="text-gray-300 text-sm text-center">Choose a conversation or search for a user</p>}
+      </div>
+    )
+  )
+
   return (
     <div className="flex bg-gray-50 min-h-screen">
       <Navbar />
       <div className="flex-1 md:ml-64 h-screen overflow-hidden">
 
-        {/* ══ MOBILE ══ */}
+        {/* MOBILE */}
         <div className="flex h-full md:hidden">
-
-          {/* SIDEBAR */}
           <div className={`flex flex-col bg-white h-full w-full border-r border-gray-200 ${view === "sidebar" ? "flex" : "hidden"}`}>
             <SearchHeader />
-            <SidebarList />
+            <SidebarContent />
           </div>
-
-          {/* CHAT */}
           <div className={`flex flex-col bg-gray-50 w-full h-[calc(100dvh-64px)] ${view === "chat" ? "flex" : "hidden"}`}>
-            {selectedUser ? (
-              <>
-                <div className="flex items-center gap-3 px-3 py-3 bg-white border-b border-gray-100 shadow-sm flex-shrink-0">
-                  <button onClick={() => setView("sidebar")} className="p-2 rounded-full hover:bg-gray-100 text-gray-600 transition flex-shrink-0">
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                    </svg>
-                  </button>
-                  <img src={avatarSrc(selectedUser)} onError={e => avatarErr(e, selectedUser)} className="w-10 h-10 rounded-full object-cover flex-shrink-0" alt={selectedUser.username} />
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold text-gray-900 text-sm truncate">{selectedUser.username}</p>
-                    <p className="text-xs text-green-500 font-medium">Online</p>
-                  </div>
-                </div>
-
-                <div className="flex-1 min-h-0 overflow-y-auto px-3 py-4 flex flex-col gap-4">
-                  {messages.map((m, i) => {
-                    const isMine = m.sender === userId
-                    const senderUser = isMine ? me : selectedUser
-                    const isLastInGroup = i === messages.length - 1 || messages[i + 1]?.sender !== m.sender
-                    return <MessageBubble key={m._id || i} m={m} isMine={isMine} senderUser={senderUser} isLastInGroup={isLastInGroup} />
-                  })}
-                  <div ref={messagesEndRef} />
-                </div>
-
-                <SharedPreview />
-                <InputBar px="px-3" />
-              </>
-            ) : (
-              <div className="flex-1 flex flex-col items-center justify-center text-gray-300 gap-3 p-6">
-                <div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center">
-                  <svg className="w-10 h-10 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-                  </svg>
-                </div>
-                <p className="text-gray-400 font-semibold">Select a chat</p>
-              </div>
-            )}
+            <ChatContent isMobile={true} />
           </div>
         </div>
 
-        {/* ══ DESKTOP ══ */}
+        {/* DESKTOP */}
         <div className="hidden md:flex h-full">
-
           <div className="w-80 flex-shrink-0 h-full flex flex-col bg-white border-r border-gray-200">
             <SearchHeader />
-            <SidebarList />
+            <SidebarContent />
           </div>
-
           <div className="flex-1 h-full min-w-0 flex flex-col bg-gray-50">
-            {selectedUser ? (
-              <>
-                <div className="flex items-center gap-3 px-3 py-3 bg-white border-b border-gray-100 shadow-sm flex-shrink-0">
-                  <img src={avatarSrc(selectedUser)} onError={e => avatarErr(e, selectedUser)} className="w-10 h-10 rounded-full object-cover flex-shrink-0" alt={selectedUser.username} />
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold text-gray-900 text-sm truncate">{selectedUser.username}</p>
-                    <p className="text-xs text-green-500 font-medium">Online</p>
-                  </div>
-                </div>
-
-                <div className="flex-1 min-h-0 overflow-y-auto px-4 py-4 flex flex-col gap-4">
-                  {messages.map((m, i) => {
-                    const isMine = m.sender === userId
-                    const senderUser = isMine ? me : selectedUser
-                    const isLastInGroup = i === messages.length - 1 || messages[i + 1]?.sender !== m.sender
-                    return <MessageBubble key={m._id || i} m={m} isMine={isMine} senderUser={senderUser} isLastInGroup={isLastInGroup} />
-                  })}
-                  <div ref={messagesEndRef} />
-                </div>
-
-                <SharedPreview />
-                <InputBar px="px-4" />
-              </>
-            ) : (
-              <div className="flex-1 flex flex-col items-center justify-center text-gray-300 gap-3 p-6">
-                <div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center">
-                  <svg className="w-10 h-10 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-                  </svg>
-                </div>
-                <p className="text-gray-400 font-semibold">Select a chat</p>
-                <p className="text-gray-300 text-sm text-center">Choose a conversation or search for a user</p>
-              </div>
-            )}
+            <ChatContent isMobile={false} />
           </div>
         </div>
 

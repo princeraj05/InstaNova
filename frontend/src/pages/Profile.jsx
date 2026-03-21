@@ -35,17 +35,14 @@ export default function Profile() {
       } catch (err) { console.log(err) }
     }
 
-    // 🔥 Saved posts — full post objects
+    // 🔥 Saved posts — Post model ke savedBy se fetch
     const fetchSavedPosts = async () => {
       try {
         const res = await API.get(`/posts/saved/${userId}`)
         setSavedPosts(res.data)
       } catch (err) {
-        // fallback: get from user.savedPosts if API not available
-        try {
-          const res = await API.get(`/user/${userId}`)
-          setSavedPosts(res.data.savedPosts || [])
-        } catch { console.log(err) }
+        console.log("saved posts error:", err)
+        setSavedPosts([])
       }
     }
 
@@ -67,20 +64,17 @@ export default function Profile() {
     }
   }, [userId])
 
-  // ================= ADD STORY =================
+  // ADD STORY
   const handleStoryUpload = async (e) => {
     const file = e.target.files[0]
     if (!file) return
-
     try {
       setUploading(true)
       const formData = new FormData()
       formData.append("media", file)
-
       const { data } = await API.post("/stories", formData, {
         headers: { "Content-Type": "multipart/form-data" }
       })
-
       setMyStories(prev => [data, ...prev])
       alert("Story uploaded! ✅")
     } catch (err) {
@@ -116,7 +110,6 @@ export default function Profile() {
 
               {/* PROFILE PIC + STORY */}
               <div className="relative flex-shrink-0">
-
                 <div
                   onClick={() => {
                     if (myStories.length > 0) {
