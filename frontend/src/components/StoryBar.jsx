@@ -19,10 +19,9 @@ export default function StoryBar() {
 
         const groupedStories = {}
         data.forEach((s) => {
-          if (!groupedStories[s.user._id]) {
-            groupedStories[s.user._id] = []
-          }
-          groupedStories[s.user._id].push(s)
+          const uid = s.user._id || s.user
+          if (!groupedStories[uid]) groupedStories[uid] = []
+          groupedStories[uid].push(s)
         })
 
         setGrouped(groupedStories)
@@ -48,7 +47,7 @@ export default function StoryBar() {
         headers: { "Content-Type": "multipart/form-data" }
       })
 
-      // Turant state me add karo
+      // Turant grouped state me add
       setGrouped(prev => {
         const updated = { ...prev }
         if (!updated[me._id]) updated[me._id] = []
@@ -61,17 +60,39 @@ export default function StoryBar() {
       alert("Story upload failed")
     } finally {
       setUploading(false)
+      // input reset karo taaki same file dobara select ho sake
+      e.target.value = ""
     }
   }
+
+  // My stories (already posted)
+  const myStories = grouped[me._id] || []
+
+  // Other users stories (excluding me)
+  const otherStories = Object.entries(grouped).filter(([uid]) => uid !== me._id)
 
   return (
     <>
       <div className="flex gap-4 overflow-x-auto mb-5 pb-2 scrollbar-hide">
 
-        {/* 🔥 YOUR STORY — always first */}
+        {/* 🔥 YOUR STORY */}
         <div className="flex flex-col items-center shrink-0">
           <div className="relative">
-            <div className="w-16 h-16 rounded-full p-[2px] bg-gray-200">
+
+            {/* Click on pic = VIEW stories (if any) */}
+            <div
+              onClick={() => {
+                if (myStories.length > 0) {
+                  setSelectedStories(myStories)
+                  setIndex(0)
+                }
+              }}
+              className={`w-16 h-16 rounded-full p-[2px] transition
+                ${myStories.length > 0
+                  ? "bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 cursor-pointer"
+                  : "bg-gray-200 cursor-default"
+                }`}
+            >
               <div className="w-full h-full rounded-full border-2 border-white overflow-hidden">
                 <img
                   src={me?.profilePic || `https://ui-avatars.com/api/?name=${me?.username}`}
@@ -80,11 +101,14 @@ export default function StoryBar() {
               </div>
             </div>
 
-            {/* + button */}
+            {/* + button = UPLOAD new story */}
             <button
-              onClick={() => storyInputRef.current.click()}
+              onClick={(e) => {
+                e.stopPropagation()
+                storyInputRef.current.click()
+              }}
               disabled={uploading}
-              className="absolute bottom-0 right-0 w-5 h-5 bg-blue-500 hover:bg-blue-600 disabled:bg-blue-300 rounded-full flex items-center justify-center border-2 border-white transition-colors"
+              className="absolute bottom-0 right-0 w-5 h-5 bg-blue-500 hover:bg-blue-600 disabled:bg-blue-300 rounded-full flex items-center justify-center border-2 border-white transition-colors z-10"
             >
               {uploading ? (
                 <svg className="animate-spin w-2.5 h-2.5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -97,7 +121,9 @@ export default function StoryBar() {
             </button>
           </div>
 
-          <p className="text-xs mt-1 text-gray-500 w-16 text-center truncate">Your story</p>
+          <p className="text-xs mt-1 text-gray-500 w-16 text-center truncate">
+            {myStories.length > 0 ? `Your story` : "Add story"}
+          </p>
 
           <input
             ref={storyInputRef}
@@ -109,18 +135,18 @@ export default function StoryBar() {
         </div>
 
         {/* OTHER USERS STORIES */}
-        {Object.values(grouped).map((userStories) => {
+        {otherStories.map(([uid, userStories]) => {
           const first = userStories[0]
-          const seen = seenStories.includes(first.user._id)
+          const seen = seenStories.includes(uid)
 
           return (
             <div
-              key={first._id}
+              key={uid}
               className="flex flex-col items-center cursor-pointer shrink-0"
               onClick={() => {
                 setSelectedStories(userStories)
                 setIndex(0)
-                setSeenStories(prev => [...new Set([...prev, first.user._id])])
+                setSeenStories(prev => [...new Set([...prev, uid])])
               }}
             >
               <div className={`w-16 h-16 rounded-full p-[2px] ${seen ? "bg-gray-300" : "bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600"}`}>
@@ -137,10 +163,6 @@ export default function StoryBar() {
             </div>
           )
         })}
-
-        {Object.keys(grouped).length === 0 && (
-          <p className="text-xs text-gray-400 py-5 pl-2">No stories yet</p>
-        )}
 
       </div>
 
