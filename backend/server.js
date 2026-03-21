@@ -17,6 +17,7 @@ import reelsRoutes from "./routes/reelsRoutes.js"
 import messageRoutes from "./routes/messageRoutes.js"
 import conversationRoutes from "./routes/conversationRoutes.js"
 import notificationRoutes from "./routes/notifications.js"
+import storyRoutes from "./routes/storyRoutes.js"
 
 dotenv.config()
 
@@ -58,6 +59,7 @@ app.use("/api/user", userRoutes)
 app.use("/api/search", searchRoutes)
 app.use("/api/posts", postRoutes)
 app.use("/api/reels", reelsRoutes)
+app.use("/api/stories", storyRoutes)
 
 // ==========================
 // 🔥 SOCKET SETUP

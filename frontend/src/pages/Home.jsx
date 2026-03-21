@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom" // ✅ ADD
 import Navbar from "../components/Navbar"
 import API from "../api/axios"
 import { io } from "socket.io-client"
+import StoryBar from "../components/StoryBar"
 
 import {
   FiHeart,
@@ -168,7 +169,10 @@ export default function Home() {
       <div className="flex-1 md:ml-64 flex justify-center">
         <div className="w-full max-w-xl px-4 py-6 pb-20 md:pb-6">
 
-          {/* 🔥 HEADER WITH NOTIFICATION */}
+          {/* 🔥 STORIES */}
+          <StoryBar />
+
+          {/* HEADER */}
           <div className="flex items-center justify-between mb-5">
             <h2 className="text-xl font-bold text-gray-900">Feed</h2>
 
