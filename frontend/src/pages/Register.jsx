@@ -52,7 +52,7 @@ export default function Register() {
             </svg>
           </div>
           <h1 className="text-2xl font-bold text-gray-900">Create Account</h1>
-          <p className="text-sm text-gray-400 mt-1">Join Instagram today</p>
+          <p className="text-sm text-gray-400 mt-1">Join InstaNova today</p>
         </div>
 
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-4">
