@@ -2,14 +2,14 @@ import { useEffect, useState, useRef } from "react"
 import Navbar from "../components/Navbar"
 import API from "../api/axios"
 import { Link, useNavigate } from "react-router-dom"
-import { FiGrid, FiFilm, FiEdit2, FiBookmark, FiPlus } from "react-icons/fi"
+import { FiGrid, FiFilm, FiEdit2, FiBookmark, FiPlus, FiLogOut, FiMenu } from "react-icons/fi"
 import StoryViewer from "../components/StoryViewer"
 
 export default function Profile() {
   const [user, setUser] = useState({})
   const [posts, setPosts] = useState([])
-  const [savedPosts, setSavedPosts] = useState([])   // saved images (from posts API)
-  const [savedReels, setSavedReels] = useState([])   // saved reels (from reels API)
+  const [savedPosts, setSavedPosts] = useState([])
+  const [savedReels, setSavedReels] = useState([])
   const [tab, setTab] = useState("posts")
   const [uploading, setUploading] = useState(false)
   const [myStories, setMyStories] = useState([])
@@ -19,6 +19,14 @@ export default function Profile() {
   const storyInputRef = useRef(null)
   const userId = localStorage.getItem("userId")
   const navigate = useNavigate()
+
+  // ── LOGOUT ──
+  const handleLogout = () => {
+    localStorage.removeItem("token")
+    localStorage.removeItem("user")
+    localStorage.removeItem("userId")
+    navigate("/")
+  }
 
   useEffect(() => {
     if (!userId) return
@@ -37,11 +45,9 @@ export default function Profile() {
       } catch (err) { console.log(err) }
     }
 
-    // ── Saved images — from User.savedPosts (non-reel) ──
     const fetchSavedPosts = async () => {
       try {
         const res = await API.get(`/posts/saved/${userId}`)
-        // filter out reels in case backend returns all
         const images = res.data.filter(p => p.mediaType !== "reel")
         setSavedPosts(images)
       } catch (err) {
@@ -50,7 +56,6 @@ export default function Profile() {
       }
     }
 
-    // ── Saved reels — from User.savedPosts filtered by mediaType=reel ──
     const fetchSavedReels = async () => {
       try {
         const res = await API.get(`/reels/saved/${userId}`)
@@ -103,7 +108,6 @@ export default function Profile() {
   const imgPosts  = posts.filter(p => p.mediaType !== "reel")
   const reelPosts = posts.filter(p => p.mediaType === "reel")
 
-  // savedReels array mein item hai toh reel hai
   const isItemReel = (item) =>
     item.mediaType === "reel" || savedReels.some(r => r._id === item._id)
 
@@ -119,7 +123,7 @@ export default function Profile() {
       <Navbar />
 
       <div className="flex-1 md:ml-64 flex justify-center min-w-0">
-        <div className="w-full max-w-4xl px-4 py-5 pb-24 md:pb-8">
+        <div className="w-full max-w-4xl px-3 sm:px-4 py-5 pb-24 md:pb-8">
 
           {/* ── PROFILE HEADER ── */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6 mb-5">
@@ -181,15 +185,37 @@ export default function Profile() {
 
               {/* USER INFO */}
               <div className="flex-1 text-center sm:text-left min-w-0">
-                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-3">
+
+                {/* Username + Action Buttons Row */}
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-2 mb-3 flex-wrap">
                   <h2 className="text-lg sm:text-xl font-bold text-gray-900 truncate">{user.username}</h2>
-                  <Link to="/edit-profile">
-                    <button className="inline-flex items-center gap-1.5 px-4 py-1.5 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition whitespace-nowrap">
-                      <FiEdit2 size={13} /> Edit Profile
+
+                  <div className="flex items-center justify-center sm:justify-start gap-2 flex-wrap">
+                    {/* Edit Profile */}
+                    <Link to="/edit-profile">
+                      <button className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition whitespace-nowrap">
+                        <FiEdit2 size={13} /> Edit Profile
+                      </button>
+                    </Link>
+
+                    {/* More */}
+                    <Link to="/more">
+                      <button className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition whitespace-nowrap">
+                        <FiMenu size={13} /> More
+                      </button>
+                    </Link>
+
+                    {/* Logout */}
+                    <button
+                      onClick={handleLogout}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-50 border border-red-200 rounded-lg text-sm font-medium text-red-600 hover:bg-red-100 transition whitespace-nowrap"
+                    >
+                      <FiLogOut size={13} /> Logout
                     </button>
-                  </Link>
+                  </div>
                 </div>
 
+                {/* Stats */}
                 <div className="flex justify-center sm:justify-start gap-5 sm:gap-6 text-sm mb-3">
                   <div className="text-center">
                     <p className="font-bold text-gray-900">{posts.length}</p>
@@ -220,21 +246,21 @@ export default function Profile() {
           <div className="flex border-b border-gray-200 mb-4">
             <button
               onClick={() => setTab("posts")}
-              className={`flex items-center gap-1.5 px-4 sm:px-5 py-2.5 text-sm font-medium border-b-2 transition
+              className={`flex items-center gap-1.5 px-3 sm:px-5 py-2.5 text-xs sm:text-sm font-medium border-b-2 transition
                 ${tab === "posts" ? "border-indigo-500 text-indigo-600" : "border-transparent text-gray-400 hover:text-gray-600"}`}
             >
               <FiGrid size={15} /> Posts
             </button>
             <button
               onClick={() => setTab("reels")}
-              className={`flex items-center gap-1.5 px-4 sm:px-5 py-2.5 text-sm font-medium border-b-2 transition
+              className={`flex items-center gap-1.5 px-3 sm:px-5 py-2.5 text-xs sm:text-sm font-medium border-b-2 transition
                 ${tab === "reels" ? "border-indigo-500 text-indigo-600" : "border-transparent text-gray-400 hover:text-gray-600"}`}
             >
               <FiFilm size={15} /> Reels
             </button>
             <button
               onClick={() => setTab("saved")}
-              className={`flex items-center gap-1.5 px-4 sm:px-5 py-2.5 text-sm font-medium border-b-2 transition
+              className={`flex items-center gap-1.5 px-3 sm:px-5 py-2.5 text-xs sm:text-sm font-medium border-b-2 transition
                 ${tab === "saved" ? "border-indigo-500 text-indigo-600" : "border-transparent text-gray-400 hover:text-gray-600"}`}
             >
               <FiBookmark size={15} />
@@ -252,7 +278,6 @@ export default function Profile() {
             {displayed.map(post => {
               if (!post?._id) return null
 
-              // ── REEL CARD ──
               if (isItemReel(post)) {
                 return (
                   <div
@@ -282,7 +307,6 @@ export default function Profile() {
                 )
               }
 
-              // ── IMAGE POST CARD ──
               return (
                 <div key={post._id} className="relative rounded-xl overflow-hidden aspect-square bg-gray-100 group">
                   <img
