@@ -3,8 +3,7 @@ import { useNavigate } from "react-router-dom"
 import Navbar from "../components/Navbar"
 import API from "../api/axios"
 import {
-  FiTrash2, FiLogOut, FiAlertTriangle, FiInfo,
-  FiShield, FiHelpCircle, FiChevronRight
+  FiTrash2, FiLogOut, FiAlertTriangle
 } from "react-icons/fi"
 
 export default function More() {
@@ -50,54 +49,6 @@ export default function More() {
           <div className="mb-6">
             <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">More</h2>
             <p className="mt-1 text-sm text-gray-500">Settings and account options</p>
-          </div>
-
-          {/* ── INFO CARDS ── */}
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden mb-4">
-            <div className="px-5 py-3 border-b border-gray-100 bg-gray-50">
-              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">General</h3>
-            </div>
-
-            <div className="divide-y divide-gray-100">
-              <button className="w-full flex items-center justify-between px-5 py-4 hover:bg-gray-50 transition group">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center">
-                    <FiInfo size={16} className="text-blue-500" />
-                  </div>
-                  <div className="text-left">
-                    <p className="text-sm font-medium text-gray-800">About</p>
-                    <p className="text-xs text-gray-400">App info and version</p>
-                  </div>
-                </div>
-                <FiChevronRight size={16} className="text-gray-300 group-hover:text-gray-400 transition" />
-              </button>
-
-              <button className="w-full flex items-center justify-between px-5 py-4 hover:bg-gray-50 transition group">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-purple-50 flex items-center justify-center">
-                    <FiShield size={16} className="text-purple-500" />
-                  </div>
-                  <div className="text-left">
-                    <p className="text-sm font-medium text-gray-800">Privacy Policy</p>
-                    <p className="text-xs text-gray-400">How we handle your data</p>
-                  </div>
-                </div>
-                <FiChevronRight size={16} className="text-gray-300 group-hover:text-gray-400 transition" />
-              </button>
-
-              <button className="w-full flex items-center justify-between px-5 py-4 hover:bg-gray-50 transition group">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-green-50 flex items-center justify-center">
-                    <FiHelpCircle size={16} className="text-green-500" />
-                  </div>
-                  <div className="text-left">
-                    <p className="text-sm font-medium text-gray-800">Help & Support</p>
-                    <p className="text-xs text-gray-400">FAQs and contact us</p>
-                  </div>
-                </div>
-                <FiChevronRight size={16} className="text-gray-300 group-hover:text-gray-400 transition" />
-              </button>
-            </div>
           </div>
 
           {/* ── LOGOUT CARD ── */}

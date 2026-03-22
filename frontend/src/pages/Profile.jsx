@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from "react"
 import Navbar from "../components/Navbar"
 import API from "../api/axios"
 import { Link, useNavigate } from "react-router-dom"
-import { FiGrid, FiFilm, FiEdit2, FiBookmark, FiPlus, FiLogOut, FiMenu } from "react-icons/fi"
+import { FiGrid, FiFilm, FiEdit2, FiBookmark, FiPlus, FiMenu } from "react-icons/fi"
 import StoryViewer from "../components/StoryViewer"
 
 export default function Profile() {
@@ -19,14 +19,6 @@ export default function Profile() {
   const storyInputRef = useRef(null)
   const userId = localStorage.getItem("userId")
   const navigate = useNavigate()
-
-  // ── LOGOUT ──
-  const handleLogout = () => {
-    localStorage.removeItem("token")
-    localStorage.removeItem("user")
-    localStorage.removeItem("userId")
-    navigate("/")
-  }
 
   useEffect(() => {
     if (!userId) return
@@ -204,14 +196,6 @@ export default function Profile() {
                         <FiMenu size={13} /> More
                       </button>
                     </Link>
-
-                    {/* Logout */}
-                    <button
-                      onClick={handleLogout}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-50 border border-red-200 rounded-lg text-sm font-medium text-red-600 hover:bg-red-100 transition whitespace-nowrap"
-                    >
-                      <FiLogOut size={13} /> Logout
-                    </button>
                   </div>
                 </div>
 
