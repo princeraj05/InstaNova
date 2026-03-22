@@ -101,11 +101,7 @@ export default function Home() {
       const { data } = await API.post(`/posts/${id}/like`, { userId: myId })
       setPostStates(prev => ({
         ...prev,
-        [id]: {
-          ...prev[id],
-          liked: data.liked,
-          likeCount: data.likes.length
-        }
+        [id]: { ...prev[id], liked: data.liked, likeCount: data.likes.length }
       }))
     } catch (err) { console.log(err) }
   }
@@ -157,58 +153,37 @@ export default function Home() {
   return (
     <div className="flex bg-gray-50 min-h-screen">
 
-      {/* ── SIDEBAR NAV (hidden on mobile, shown md+) ── */}
+      {/* Sidebar - only md+ */}
       <Navbar />
 
-      {/* ══════════════════════════════════════════
-          MAIN FEED COLUMN
-      ══════════════════════════════════════════ */}
-      <div className="
-        flex-1
-        md:ml-64
-        flex justify-center
-        /* On xl screens, shift left slightly so right sidebar doesn't crush feed */
-        xl:mr-80
-      ">
-        <div className="
-          w-full
-          max-w-xl
-          /* mobile: tighter padding + bottom space for bottom nav */
-          px-3 py-4 pb-24
-          /* tablet+ */
-          sm:px-4 sm:py-5
-          /* desktop */
-          md:pb-8 md:py-6
-        ">
+      {/* ══ FEED WRAPPER ══
+          mobile:  no left margin (navbar is bottom bar on mobile)
+          md+:     ml-64 for sidebar
+          xl+:     also mr-80 for right notif panel
+      */}
+      <div className="flex-1 md:ml-64 xl:mr-80 flex justify-center min-w-0">
+        <div className="w-full max-w-xl px-4 pt-4 pb-24 md:pt-6 md:pb-8">
 
-          {/* ── TOP BAR (mobile only) ── */}
-          <div className="
-            flex items-center justify-between mb-4
-            md:hidden
-          ">
-            <h1 className="text-lg font-bold text-gray-900 tracking-tight">Feed</h1>
+          {/* ── MOBILE TOP BAR ── */}
+          <div className="flex items-center justify-between mb-4 md:hidden">
+            <h1 className="text-lg font-bold text-gray-900">Feed</h1>
             <button
               onClick={() => setShowNotifDrawer(true)}
               className="relative p-2 rounded-full hover:bg-gray-100 transition-colors"
             >
               <FiBell size={20} />
               {unreadCount > 0 && (
-                <span className="
-                  absolute top-1 right-1
-                  min-w-[16px] h-4 px-[3px]
-                  bg-red-500 text-white text-[10px] font-bold
-                  rounded-full flex items-center justify-center
-                ">
+                <span className="absolute top-1 right-1 min-w-[16px] h-4 px-[3px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
                   {unreadCount > 9 ? "9+" : unreadCount}
                 </span>
               )}
             </button>
           </div>
 
-          {/* ── DESKTOP FEED HEADER ── */}
+          {/* ── DESKTOP TOP BAR ── */}
           <div className="hidden md:flex items-center justify-between mb-5">
             <h2 className="text-xl font-bold text-gray-900">Feed</h2>
-            {/* Bell shown only when right sidebar is hidden (md only, not xl) */}
+            {/* Bell only visible md → xl (xl has right sidebar) */}
             <button
               onClick={() => navigate("/notifications")}
               className="relative xl:hidden p-2 rounded-full hover:bg-gray-100 transition-colors"
@@ -230,19 +205,13 @@ export default function Home() {
             return (
               <div
                 key={post._id}
-                className="
-                  bg-white rounded-2xl shadow-sm border mb-4
-                  overflow-hidden
-                  /* slight hover lift on desktop */
-                  transition-shadow duration-200
-                  hover:shadow-md
-                "
+                className="bg-white rounded-2xl shadow-sm border border-gray-100 mb-4 overflow-hidden hover:shadow-md transition-shadow duration-200"
               >
                 {/* POST HEADER */}
-                <div className="flex items-center gap-3 px-3 py-2.5 sm:px-4 sm:py-3 border-b">
+                <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-100">
                   <img
                     src={post.user?.profilePic || `https://ui-avatars.com/api/?name=${post.user?.username}`}
-                    className="w-8 h-8 sm:w-9 sm:h-9 rounded-full object-cover flex-shrink-0"
+                    className="w-9 h-9 rounded-full object-cover flex-shrink-0"
                     alt={post.user?.username}
                   />
                   <p className="text-sm font-semibold truncate">{post.user?.username}</p>
@@ -254,9 +223,7 @@ export default function Home() {
                     ref={el => videoRefs.current[index] = el}
                     src={post.media}
                     className="w-full aspect-square object-cover"
-                    loop
-                    muted
-                    playsInline
+                    loop muted playsInline
                   />
                 ) : (
                   <img
@@ -268,12 +235,12 @@ export default function Home() {
                 )}
 
                 {/* ACTIONS */}
-                <div className="px-3 py-2.5 sm:px-4 sm:py-3">
+                <div className="px-4 py-3">
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-4">
                       <button
                         onClick={() => handleLike(post._id)}
-                        className="p-0.5 rounded-full hover:scale-110 transition-transform active:scale-95"
+                        className="hover:scale-110 active:scale-95 transition-transform"
                       >
                         {s.liked
                           ? <FaHeart className="text-red-500 w-5 h-5" />
@@ -281,20 +248,20 @@ export default function Home() {
                       </button>
                       <button
                         onClick={() => openComments(post._id)}
-                        className="p-0.5 rounded-full hover:scale-110 transition-transform active:scale-95"
+                        className="hover:scale-110 active:scale-95 transition-transform"
                       >
                         <FiMessageCircle className="w-5 h-5 text-gray-700" />
                       </button>
                       <button
                         onClick={() => handleShare(post)}
-                        className="p-0.5 rounded-full hover:scale-110 transition-transform active:scale-95"
+                        className="hover:scale-110 active:scale-95 transition-transform"
                       >
                         <FiSend className="w-5 h-5 text-gray-700" />
                       </button>
                     </div>
                     <button
                       onClick={() => handleSave(post._id)}
-                      className="p-0.5 rounded-full hover:scale-110 transition-transform active:scale-95"
+                      className="hover:scale-110 active:scale-95 transition-transform"
                     >
                       {s.saved
                         ? <FaBookmark className="text-yellow-500 w-5 h-5" />
@@ -311,31 +278,26 @@ export default function Home() {
               </div>
             )
           })}
+
+          {posts.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-20 text-gray-400 gap-2">
+              <FiHeart size={36} className="opacity-30" />
+              <p className="text-sm">No posts yet</p>
+            </div>
+          )}
+
         </div>
       </div>
 
-      {/* ══════════════════════════════════════════
-          RIGHT SIDEBAR — notifications
-          Only on xl screens
-      ══════════════════════════════════════════ */}
-      <div className="
-        hidden xl:flex
-        flex-col
-        w-80 shrink-0
-        fixed right-0 top-0 bottom-0
-        border-l bg-white
-        p-5
-        overflow-y-auto
-      ">
+      {/* ══ RIGHT NOTIF SIDEBAR — xl only ══ */}
+      <div className="hidden xl:flex flex-col w-80 fixed right-0 top-0 bottom-0 border-l bg-white p-5 overflow-y-auto">
         <h3 className="font-bold text-base mb-4 text-gray-900">Notifications</h3>
-        <div className="space-y-3">
+        <div className="space-y-2">
           {notifications.map(n => (
             <div
               key={n._id}
-              className={`
-                flex items-start gap-3 text-sm p-2 rounded-xl transition-colors
-                ${!n.read ? "bg-blue-50" : "hover:bg-gray-50"}
-              `}
+              className={`flex items-start gap-3 text-sm p-2.5 rounded-xl transition-colors
+                ${!n.read ? "bg-blue-50" : "hover:bg-gray-50"}`}
             >
               <img
                 src={n.sender?.profilePic || `https://ui-avatars.com/api/?name=${n.sender?.username}`}
@@ -353,26 +315,15 @@ export default function Home() {
         </div>
       </div>
 
-      {/* ══════════════════════════════════════════
-          MOBILE NOTIFICATION DRAWER
-          Slides up from bottom on small screens
-      ══════════════════════════════════════════ */}
+      {/* ══ MOBILE NOTIF DRAWER ══ */}
       {showNotifDrawer && (
         <>
-          {/* backdrop */}
           <div
-            className="fixed inset-0 bg-black/40 z-40 xl:hidden"
+            className="fixed inset-0 bg-black/40 z-40"
             onClick={() => setShowNotifDrawer(false)}
           />
-          {/* drawer */}
-          <div className="
-            fixed bottom-0 left-0 right-0 z-50
-            bg-white rounded-t-3xl
-            max-h-[70vh] overflow-y-auto
-            p-5
-            xl:hidden
-          ">
-            <div className="flex items-center justify-between mb-4">
+          <div className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-3xl max-h-[70vh] overflow-y-auto">
+            <div className="flex items-center justify-between px-5 pt-5 pb-3">
               <h3 className="font-bold text-base text-gray-900">Notifications</h3>
               <button
                 onClick={() => setShowNotifDrawer(false)}
@@ -381,14 +332,12 @@ export default function Home() {
                 <FiX size={18} />
               </button>
             </div>
-            <div className="space-y-3">
+            <div className="px-5 pb-6 space-y-2">
               {notifications.map(n => (
                 <div
                   key={n._id}
-                  className={`
-                    flex items-start gap-3 text-sm p-2 rounded-xl
-                    ${!n.read ? "bg-blue-50" : ""}
-                  `}
+                  className={`flex items-start gap-3 text-sm p-2.5 rounded-xl
+                    ${!n.read ? "bg-blue-50" : ""}`}
                 >
                   <img
                     src={n.sender?.profilePic || `https://ui-avatars.com/api/?name=${n.sender?.username}`}
@@ -408,42 +357,35 @@ export default function Home() {
         </>
       )}
 
-      {/* ══════════════════════════════════════════
-          COMMENT PANEL
-      ══════════════════════════════════════════ */}
+      {/* ══ COMMENT PANEL ══ */}
       {commentPanel && (
         <>
           <div
             className="fixed inset-0 bg-black/50 z-40"
             onClick={() => setCommentPanel(null)}
           />
-          <div className="
-            fixed bottom-0 left-0 right-0 z-50
-            md:left-64
-            xl:right-80
-            bg-white rounded-t-3xl
-            max-h-[70vh] flex flex-col
-          ">
+          <div className="fixed bottom-0 left-0 right-0 md:left-64 xl:right-80 z-50 bg-white rounded-t-3xl max-h-[70vh] flex flex-col">
+
             {/* drag handle */}
-            <div className="flex justify-center pt-3 pb-2 shrink-0">
-              <div className="w-10 h-1 rounded-full bg-gray-300" />
+            <div className="flex justify-center pt-3 pb-1 shrink-0">
+              <div className="w-10 h-1 rounded-full bg-gray-200" />
             </div>
 
             {/* header */}
-            <div className="flex items-center justify-between px-4 pb-2 border-b shrink-0">
+            <div className="flex items-center justify-between px-4 py-2.5 border-b shrink-0">
               <p className="font-semibold text-sm text-gray-800">Comments</p>
               <button
                 onClick={() => setCommentPanel(null)}
-                className="p-1 rounded-full hover:bg-gray-100 transition-colors"
+                className="p-1.5 rounded-full hover:bg-gray-100 transition-colors"
               >
                 <FiX size={16} />
               </button>
             </div>
 
-            {/* comments list */}
-            <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2">
+            {/* list */}
+            <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
               {(comments[commentPanel] || []).map(c => (
-                <div key={c._id} className="flex items-start gap-2">
+                <div key={c._id} className="flex items-start gap-2.5">
                   <img
                     src={c.user?.profilePic || `https://ui-avatars.com/api/?name=${c.user?.username}`}
                     className="w-7 h-7 rounded-full object-cover flex-shrink-0 mt-0.5"
@@ -467,21 +409,12 @@ export default function Home() {
                 onChange={e => setCommentInput(e.target.value)}
                 onKeyDown={e => { if (e.key === "Enter") submitComment(commentPanel) }}
                 placeholder="Add a comment..."
-                className="
-                  flex-1 border px-3 py-2 rounded-full text-sm
-                  focus:outline-none focus:ring-2 focus:ring-indigo-300
-                  bg-gray-50
-                "
+                className="flex-1 border border-gray-200 px-3 py-2 rounded-full text-sm bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-300"
               />
               <button
                 onClick={() => submitComment(commentPanel)}
-                className="
-                  text-indigo-500 font-semibold text-sm
-                  px-2 py-1 rounded-full
-                  hover:bg-indigo-50 transition-colors
-                  disabled:opacity-40
-                "
                 disabled={!commentInput.trim()}
+                className="text-indigo-500 font-semibold text-sm px-2 py-1 rounded-full hover:bg-indigo-50 transition-colors disabled:opacity-40"
               >
                 Post
               </button>
@@ -489,6 +422,7 @@ export default function Home() {
           </div>
         </>
       )}
+
     </div>
   )
 }
