@@ -8,7 +8,8 @@ import StoryViewer from "../components/StoryViewer"
 export default function Profile() {
   const [user, setUser] = useState({})
   const [posts, setPosts] = useState([])
-  const [savedPosts, setSavedPosts] = useState([])
+  const [savedPosts, setSavedPosts] = useState([])     // saved images
+  const [savedReels, setSavedReels] = useState([])     // saved reels
   const [tab, setTab] = useState("posts")
   const [uploading, setUploading] = useState(false)
 
@@ -21,6 +22,9 @@ export default function Profile() {
   const navigate = useNavigate()
 
   useEffect(() => {
+    if (!userId) return
+
+    // ── profile ──
     const fetchProfile = async () => {
       try {
         const res = await API.get(`/user/${userId}`)
@@ -28,6 +32,7 @@ export default function Profile() {
       } catch (err) { console.log(err) }
     }
 
+    // ── my posts ──
     const fetchPosts = async () => {
       try {
         const res = await API.get(`/posts/user/${userId}`)
@@ -35,7 +40,7 @@ export default function Profile() {
       } catch (err) { console.log(err) }
     }
 
-    // 🔥 Saved posts — Post model ke savedBy se fetch
+    // ── saved posts (images only) ──
     const fetchSavedPosts = async () => {
       try {
         const res = await API.get(`/posts/saved/${userId}`)
@@ -46,6 +51,28 @@ export default function Profile() {
       }
     }
 
+    // ── saved reels ──
+    const fetchSavedReels = async () => {
+      try {
+        // Try dedicated saved-reels endpoint first
+        const res = await API.get(`/reels/saved/${userId}`)
+        setSavedReels(res.data)
+      } catch (err) {
+        // Fallback: fetch all reels and filter by savedBy includes userId
+        try {
+          const res = await API.get("/reels")
+          const saved = res.data.filter(r =>
+            (r.savedBy || []).some(id => id?.toString() === userId?.toString())
+          )
+          setSavedReels(saved)
+        } catch (e) {
+          console.log("saved reels fallback error:", e)
+          setSavedReels([])
+        }
+      }
+    }
+
+    // ── my stories ──
     const fetchMyStories = async () => {
       try {
         const { data } = await API.get("/stories")
@@ -56,15 +83,14 @@ export default function Profile() {
       } catch (err) { console.log(err) }
     }
 
-    if (userId) {
-      fetchProfile()
-      fetchPosts()
-      fetchSavedPosts()
-      fetchMyStories()
-    }
+    fetchProfile()
+    fetchPosts()
+    fetchSavedPosts()
+    fetchSavedReels()
+    fetchMyStories()
   }, [userId])
 
-  // ADD STORY
+  // ── ADD STORY ──
   const handleStoryUpload = async (e) => {
     const file = e.target.files[0]
     if (!file) return
@@ -86,27 +112,36 @@ export default function Profile() {
     }
   }
 
-  const imgPosts = posts.filter(p => p.mediaType !== "reel")
+  const imgPosts  = posts.filter(p => p.mediaType !== "reel")
   const reelPosts = posts.filter(p => p.mediaType === "reel")
 
+  // ── what to show in grid based on tab ──
   const displayed =
-    tab === "posts" ? imgPosts :
-    tab === "reels" ? reelPosts :
-    savedPosts
+    tab === "posts"  ? imgPosts :
+    tab === "reels"  ? reelPosts :
+    /* saved */        [...savedPosts, ...savedReels]   // merge both
 
-  const handleReelClick = (reelId) => {
-    navigate(`/reels?reelId=${reelId}`)
-  }
+  const handleReelClick = (reelId) => navigate(`/reels?reelId=${reelId}`)
+
+  // ── determine if a given item is a reel ──
+  const isReel = (item) =>
+    item.mediaType === "reel" ||
+    // reels from /reels endpoint may not have mediaType but have different shape
+    (!item.mediaType && item.likes !== undefined && item.caption !== undefined && !item.savedBy?.length === undefined)
+    // safest fallback: check if it came from savedReels array
+  const isItemReel = (item) =>
+    item.mediaType === "reel" || savedReels.some(r => r._id === item._id)
 
   return (
     <div className="flex bg-gray-50 min-h-screen">
       <Navbar />
-      <div className="flex-1 md:ml-64 flex justify-center">
-        <div className="w-full max-w-4xl px-4 py-6 pb-24 md:pb-8">
 
-          {/* Profile header */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-5">
-            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5">
+      <div className="flex-1 md:ml-64 flex justify-center">
+        <div className="w-full max-w-4xl px-3 sm:px-4 py-5 pb-24 md:pb-8">
+
+          {/* ── PROFILE HEADER ── */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6 mb-5">
+            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-5">
 
               {/* PROFILE PIC + STORY */}
               <div className="relative flex-shrink-0">
@@ -117,7 +152,7 @@ export default function Profile() {
                       setViewerOpen(true)
                     }
                   }}
-                  className={`w-24 h-24 md:w-28 md:h-28 rounded-full p-[3px] transition
+                  className={`w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 rounded-full p-[3px] transition
                     ${myStories.length > 0
                       ? "bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 cursor-pointer hover:opacity-90"
                       : "bg-gray-300 cursor-default"
@@ -127,6 +162,7 @@ export default function Profile() {
                     <img
                       src={user.profilePic || `https://ui-avatars.com/api/?name=${user.username}&background=6366f1&color=fff&size=120`}
                       className="w-full h-full object-cover rounded-full"
+                      alt={user.username}
                     />
                   </div>
                 </div>
@@ -161,18 +197,18 @@ export default function Profile() {
                 />
               </div>
 
-              {/* User info */}
-              <div className="flex-1 text-center sm:text-left">
-                <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-3">
-                  <h2 className="text-xl font-bold text-gray-900">{user.username}</h2>
+              {/* USER INFO */}
+              <div className="flex-1 text-center sm:text-left min-w-0">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-3">
+                  <h2 className="text-lg sm:text-xl font-bold text-gray-900 truncate">{user.username}</h2>
                   <Link to="/edit-profile">
-                    <button className="inline-flex items-center gap-1.5 px-4 py-1.5 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition">
+                    <button className="inline-flex items-center gap-1.5 px-4 py-1.5 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition whitespace-nowrap">
                       <FiEdit2 size={13} /> Edit Profile
                     </button>
                   </Link>
                 </div>
 
-                <div className="flex justify-center sm:justify-start gap-6 text-sm mb-3">
+                <div className="flex justify-center sm:justify-start gap-5 sm:gap-6 text-sm mb-3">
                   <div className="text-center">
                     <p className="font-bold text-gray-900">{posts.length}</p>
                     <p className="text-gray-400 text-xs">posts</p>
@@ -198,63 +234,107 @@ export default function Profile() {
             </div>
           </div>
 
-          {/* Tabs */}
+          {/* ── TABS ── */}
           <div className="flex border-b border-gray-200 mb-4">
-            <button onClick={() => setTab("posts")}
-              className={`flex items-center gap-2 px-5 py-2.5 text-sm font-medium border-b-2 transition
-                ${tab === "posts" ? "border-indigo-500 text-indigo-600" : "border-transparent text-gray-400 hover:text-gray-600"}`}>
+            <button
+              onClick={() => setTab("posts")}
+              className={`flex items-center gap-1.5 px-4 sm:px-5 py-2.5 text-sm font-medium border-b-2 transition
+                ${tab === "posts" ? "border-indigo-500 text-indigo-600" : "border-transparent text-gray-400 hover:text-gray-600"}`}
+            >
               <FiGrid size={15} /> Posts
             </button>
-            <button onClick={() => setTab("reels")}
-              className={`flex items-center gap-2 px-5 py-2.5 text-sm font-medium border-b-2 transition
-                ${tab === "reels" ? "border-indigo-500 text-indigo-600" : "border-transparent text-gray-400 hover:text-gray-600"}`}>
+            <button
+              onClick={() => setTab("reels")}
+              className={`flex items-center gap-1.5 px-4 sm:px-5 py-2.5 text-sm font-medium border-b-2 transition
+                ${tab === "reels" ? "border-indigo-500 text-indigo-600" : "border-transparent text-gray-400 hover:text-gray-600"}`}
+            >
               <FiFilm size={15} /> Reels
             </button>
-            <button onClick={() => setTab("saved")}
-              className={`flex items-center gap-2 px-5 py-2.5 text-sm font-medium border-b-2 transition
-                ${tab === "saved" ? "border-indigo-500 text-indigo-600" : "border-transparent text-gray-400 hover:text-gray-600"}`}>
-              <FiBookmark size={15} /> Saved
+            <button
+              onClick={() => setTab("saved")}
+              className={`flex items-center gap-1.5 px-4 sm:px-5 py-2.5 text-sm font-medium border-b-2 transition
+                ${tab === "saved" ? "border-indigo-500 text-indigo-600" : "border-transparent text-gray-400 hover:text-gray-600"}`}
+            >
+              <FiBookmark size={15} />
+              <span>Saved</span>
+              {/* badge showing total saved count */}
+              {(savedPosts.length + savedReels.length) > 0 && (
+                <span className="ml-1 text-[10px] bg-indigo-100 text-indigo-600 font-bold px-1.5 py-0.5 rounded-full">
+                  {savedPosts.length + savedReels.length}
+                </span>
+              )}
             </button>
           </div>
 
-          {/* Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          {/* ── GRID ── */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 sm:gap-2">
             {displayed.map(post => {
               if (!post?._id) return null
 
-              if (post.mediaType === "reel") {
+              // ── REEL CARD ──
+              if (isItemReel(post)) {
                 return (
                   <div
                     key={post._id}
                     className="relative rounded-xl overflow-hidden aspect-[9/16] bg-black cursor-pointer group"
                     onClick={() => handleReelClick(post._id)}
                   >
-                    <video src={post.media} className="w-full h-full object-cover" />
+                    <video
+                      src={post.media}
+                      className="w-full h-full object-cover"
+                      muted
+                      playsInline
+                      preload="metadata"
+                    />
+                    {/* hover overlay */}
                     <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
                       <div className="w-10 h-10 bg-white/30 rounded-full flex items-center justify-center backdrop-blur-sm">
                         <FiFilm size={18} className="text-white" />
                       </div>
                     </div>
+                    {/* reel badge */}
                     <div className="absolute top-2 right-2">
                       <FiFilm size={14} className="text-white drop-shadow" />
                     </div>
+                    {/* saved badge (only in saved tab) */}
+                    {tab === "saved" && (
+                      <div className="absolute top-2 left-2">
+                        <FiBookmark size={13} className="text-yellow-400 drop-shadow" fill="currentColor" />
+                      </div>
+                    )}
                   </div>
                 )
               }
 
+              // ── IMAGE POST CARD ──
               return (
-                <div key={post._id} className="rounded-xl overflow-hidden aspect-square bg-gray-100">
+                <div key={post._id} className="relative rounded-xl overflow-hidden aspect-square bg-gray-100 group">
                   <img
                     src={post.media}
-                    className="w-full h-full object-cover hover:scale-105 transition duration-300"
+                    className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                    alt="post"
+                    loading="lazy"
                   />
+                  {/* saved badge (only in saved tab) */}
+                  {tab === "saved" && (
+                    <div className="absolute top-2 left-2">
+                      <FiBookmark size={13} className="text-yellow-400 drop-shadow" fill="currentColor" />
+                    </div>
+                  )}
                 </div>
               )
             })}
           </div>
 
+          {/* ── EMPTY STATE ── */}
           {displayed.length === 0 && (
-            <div className="text-center py-16 text-gray-400">
+            <div className="flex flex-col items-center justify-center py-16 gap-3 text-gray-400">
+              {tab === "saved"
+                ? <FiBookmark size={36} className="opacity-30" />
+                : tab === "reels"
+                ? <FiFilm size={36} className="opacity-30" />
+                : <FiGrid size={36} className="opacity-30" />
+              }
               <p className="text-sm">No {tab} yet</p>
             </div>
           )}
@@ -262,7 +342,7 @@ export default function Profile() {
         </div>
       </div>
 
-      {/* STORY VIEWER */}
+      {/* ── STORY VIEWER ── */}
       {viewerOpen && myStories.length > 0 && (
         <StoryViewer
           stories={myStories}
