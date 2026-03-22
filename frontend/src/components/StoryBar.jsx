@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from "react"
+import { FiChevronLeft, FiChevronRight } from "react-icons/fi"
 import API from "../api/axios"
 import StoryViewer from "./StoryViewer"
 
@@ -9,49 +10,73 @@ export default function StoryBar() {
   const [seenStories, setSeenStories] = useState([])
   const [uploading, setUploading] = useState(false)
 
+  // ── scroll arrows state ──
+  const scrollRef = useRef(null)
+  const [canScrollLeft, setCanScrollLeft] = useState(false)
+  const [canScrollRight, setCanScrollRight] = useState(false)
+
   const storyInputRef = useRef(null)
 
-  // 🔥 me ko localStorage se sahi tarike se lo
   const me = JSON.parse(localStorage.getItem("user") || "{}")
   const myId = me._id || me.id || localStorage.getItem("userId") || ""
 
+  // ── fetch stories ──
   useEffect(() => {
     const fetchStories = async () => {
       try {
         const { data } = await API.get("/stories")
-
         const groupedStories = {}
         data.forEach((s) => {
-          // 🔥 FIX: .toString() se ensure karo consistent string key
           const uid = (s.user?._id || s.user || "").toString()
           if (!groupedStories[uid]) groupedStories[uid] = []
           groupedStories[uid].push(s)
         })
-
         setGrouped(groupedStories)
       } catch (err) {
         console.log(err)
       }
     }
-
     fetchStories()
   }, [])
 
-  // 🔥 STORY UPLOAD
+  // ── track scroll arrows ──
+  const updateArrows = () => {
+    const el = scrollRef.current
+    if (!el) return
+    setCanScrollLeft(el.scrollLeft > 4)
+    setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 4)
+  }
+
+  useEffect(() => {
+    const el = scrollRef.current
+    if (!el) return
+    updateArrows()
+    el.addEventListener("scroll", updateArrows, { passive: true })
+    window.addEventListener("resize", updateArrows)
+    return () => {
+      el.removeEventListener("scroll", updateArrows)
+      window.removeEventListener("resize", updateArrows)
+    }
+  }, [grouped])
+
+  const scrollByAmount = (direction) => {
+    const el = scrollRef.current
+    if (!el) return
+    const amount = el.clientWidth * 0.75
+    el.scrollBy({ left: direction === "left" ? -amount : amount, behavior: "smooth" })
+  }
+
+  // ── story upload ──
   const handleStoryUpload = async (e) => {
     const file = e.target.files[0]
     if (!file) return
-
     try {
       setUploading(true)
       const formData = new FormData()
       formData.append("media", file)
-
       const { data } = await API.post("/stories", formData, {
         headers: { "Content-Type": "multipart/form-data" }
       })
-
-      // Turant grouped state me add
       const uid = myId.toString()
       setGrouped(prev => {
         const updated = { ...prev }
@@ -59,7 +84,6 @@ export default function StoryBar() {
         updated[uid] = [data, ...updated[uid]]
         return updated
       })
-
     } catch (err) {
       console.log(err)
       alert("Story upload failed")
@@ -70,109 +94,148 @@ export default function StoryBar() {
   }
 
   const myIdStr = myId.toString()
-
-  // 🔥 Apni stories
   const myStories = grouped[myIdStr] || []
-
-  // 🔥 Dusron ki stories (apni exclude)
   const otherStories = Object.entries(grouped).filter(([uid]) => uid !== myIdStr)
 
   return (
     <>
-      <div className="flex gap-4 overflow-x-auto mb-5 pb-2 scrollbar-hide">
+      {/* ── STORY BAR WRAPPER ── */}
+      <div className="relative mb-5">
 
-        {/* 🔥 YOUR STORY */}
-        <div className="flex flex-col items-center shrink-0">
-          <div className="relative">
+        {/* LEFT ARROW */}
+        {canScrollLeft && (
+          <button
+            onClick={() => scrollByAmount("left")}
+            className="absolute left-0 top-[36px] -translate-y-1/2 z-10
+              w-7 h-7 rounded-full bg-white shadow-md border
+              flex items-center justify-center
+              hover:bg-gray-50 transition-colors -translate-x-1"
+            aria-label="Scroll left"
+          >
+            <FiChevronLeft size={16} className="text-gray-600" />
+          </button>
+        )}
 
-            {/* 🔥 Profile pic click = VIEW my stories */}
-            <div
-              onClick={() => {
-                if (myStories.length > 0) {
-                  setSelectedStories([...myStories])
-                  setIndex(0)
-                }
-              }}
-              className={`w-16 h-16 rounded-full p-[2px] transition
-                ${myStories.length > 0
-                  ? "bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 cursor-pointer hover:opacity-90"
-                  : "bg-gray-200 cursor-default"
-                }`}
-            >
-              <div className="w-full h-full rounded-full border-2 border-white overflow-hidden bg-gray-100">
-                <img
-                  src={me?.profilePic || `https://ui-avatars.com/api/?name=${me?.username || "U"}`}
-                  className="w-full h-full object-cover rounded-full"
-                />
-              </div>
-            </div>
+        {/* SCROLLABLE STRIP */}
+        <div
+          ref={scrollRef}
+          className="flex gap-4 overflow-x-auto pb-2 px-1 scroll-smooth"
+          style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+        >
 
-            {/* 🔥 + button = UPLOAD */}
-            <button
-              onClick={(e) => {
-                e.stopPropagation()
-                storyInputRef.current.click()
-              }}
-              disabled={uploading}
-              className="absolute bottom-0 right-0 w-5 h-5 bg-blue-500 hover:bg-blue-600 disabled:bg-blue-300 rounded-full flex items-center justify-center border-2 border-white transition-colors z-10"
-            >
-              {uploading ? (
-                <svg className="animate-spin w-2.5 h-2.5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
-                </svg>
-              ) : (
-                <span className="text-white text-xs font-bold leading-none">+</span>
-              )}
-            </button>
-          </div>
-
-          <p className="text-xs mt-1 text-gray-500 w-16 text-center truncate">
-            {myStories.length > 0 ? "Your story" : "Add story"}
-          </p>
-
-          <input
-            ref={storyInputRef}
-            type="file"
-            accept="image/*,video/*"
-            className="hidden"
-            onChange={handleStoryUpload}
-          />
-        </div>
-
-        {/* 🔥 OTHER USERS STORIES */}
-        {otherStories.map(([uid, userStories]) => {
-          const first = userStories[0]
-          const seen = seenStories.includes(uid)
-
-          return (
-            <div
-              key={uid}
-              className="flex flex-col items-center cursor-pointer shrink-0"
-              onClick={() => {
-                setSelectedStories([...userStories])
-                setIndex(0)
-                setSeenStories(prev => [...new Set([...prev, uid])])
-              }}
-            >
-              <div className={`w-16 h-16 rounded-full p-[2px] ${seen ? "bg-gray-300" : "bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600"}`}>
-                <div className="w-full h-full rounded-full border-2 border-white overflow-hidden">
+          {/* YOUR STORY */}
+          <div className="flex flex-col items-center shrink-0">
+            <div className="relative">
+              <div
+                onClick={() => {
+                  if (myStories.length > 0) {
+                    setSelectedStories([...myStories])
+                    setIndex(0)
+                  }
+                }}
+                className={`w-16 h-16 rounded-full p-[2px] transition
+                  ${myStories.length > 0
+                    ? "bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 cursor-pointer hover:opacity-90"
+                    : "bg-gray-200 cursor-default"
+                  }`}
+              >
+                <div className="w-full h-full rounded-full border-2 border-white overflow-hidden bg-gray-100">
                   <img
-                    src={first.user?.profilePic || `https://ui-avatars.com/api/?name=${first.user?.username}`}
+                    src={me?.profilePic || `https://ui-avatars.com/api/?name=${me?.username || "U"}`}
                     className="w-full h-full object-cover rounded-full"
                   />
                 </div>
               </div>
-              <p className="text-xs mt-1 text-gray-700 w-16 text-center truncate">
-                {first.user?.username}
-              </p>
+
+              {/* + upload button */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  storyInputRef.current.click()
+                }}
+                disabled={uploading}
+                className="absolute bottom-0 right-0 w-5 h-5 bg-blue-500 hover:bg-blue-600
+                  disabled:bg-blue-300 rounded-full flex items-center justify-center
+                  border-2 border-white transition-colors z-10"
+              >
+                {uploading ? (
+                  <svg className="animate-spin w-2.5 h-2.5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                  </svg>
+                ) : (
+                  <span className="text-white text-xs font-bold leading-none">+</span>
+                )}
+              </button>
             </div>
-          )
-        })}
+
+            <p className="text-xs mt-1 text-gray-500 w-16 text-center truncate">
+              {myStories.length > 0 ? "Your story" : "Add story"}
+            </p>
+
+            <input
+              ref={storyInputRef}
+              type="file"
+              accept="image/*,video/*"
+              className="hidden"
+              onChange={handleStoryUpload}
+            />
+          </div>
+
+          {/* OTHER USERS STORIES */}
+          {otherStories.map(([uid, userStories]) => {
+            const first = userStories[0]
+            const seen = seenStories.includes(uid)
+
+            return (
+              <div
+                key={uid}
+                className="flex flex-col items-center cursor-pointer shrink-0"
+                onClick={() => {
+                  setSelectedStories([...userStories])
+                  setIndex(0)
+                  setSeenStories(prev => [...new Set([...prev, uid])])
+                }}
+              >
+                <div className={`w-16 h-16 rounded-full p-[2px]
+                  ${seen
+                    ? "bg-gray-300"
+                    : "bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600"
+                  }`}
+                >
+                  <div className="w-full h-full rounded-full border-2 border-white overflow-hidden">
+                    <img
+                      src={first.user?.profilePic || `https://ui-avatars.com/api/?name=${first.user?.username}`}
+                      className="w-full h-full object-cover rounded-full"
+                    />
+                  </div>
+                </div>
+                <p className="text-xs mt-1 text-gray-700 w-16 text-center truncate">
+                  {first.user?.username}
+                </p>
+              </div>
+            )
+          })}
+
+        </div>
+
+        {/* RIGHT ARROW */}
+        {canScrollRight && (
+          <button
+            onClick={() => scrollByAmount("right")}
+            className="absolute right-0 top-[36px] -translate-y-1/2 z-10
+              w-7 h-7 rounded-full bg-white shadow-md border
+              flex items-center justify-center
+              hover:bg-gray-50 transition-colors translate-x-1"
+            aria-label="Scroll right"
+          >
+            <FiChevronRight size={16} className="text-gray-600" />
+          </button>
+        )}
 
       </div>
 
-      {/* 🔥 STORY VIEWER */}
+      {/* STORY VIEWER */}
       {selectedStories && selectedStories.length > 0 && (
         <StoryViewer
           stories={selectedStories}
