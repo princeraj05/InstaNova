@@ -8,11 +8,10 @@ import StoryViewer from "../components/StoryViewer"
 export default function Profile() {
   const [user, setUser] = useState({})
   const [posts, setPosts] = useState([])
-  const [savedPosts, setSavedPosts] = useState([])     // saved images
-  const [savedReels, setSavedReels] = useState([])     // saved reels
+  const [savedPosts, setSavedPosts] = useState([])   // saved images (from posts API)
+  const [savedReels, setSavedReels] = useState([])   // saved reels (from reels API)
   const [tab, setTab] = useState("posts")
   const [uploading, setUploading] = useState(false)
-
   const [myStories, setMyStories] = useState([])
   const [viewerOpen, setViewerOpen] = useState(false)
   const [storyIndex, setStoryIndex] = useState(0)
@@ -24,7 +23,6 @@ export default function Profile() {
   useEffect(() => {
     if (!userId) return
 
-    // ── profile ──
     const fetchProfile = async () => {
       try {
         const res = await API.get(`/user/${userId}`)
@@ -32,7 +30,6 @@ export default function Profile() {
       } catch (err) { console.log(err) }
     }
 
-    // ── my posts ──
     const fetchPosts = async () => {
       try {
         const res = await API.get(`/posts/user/${userId}`)
@@ -40,39 +37,30 @@ export default function Profile() {
       } catch (err) { console.log(err) }
     }
 
-    // ── saved posts (images only) ──
+    // ── Saved images — from User.savedPosts (non-reel) ──
     const fetchSavedPosts = async () => {
       try {
         const res = await API.get(`/posts/saved/${userId}`)
-        setSavedPosts(res.data)
+        // filter out reels in case backend returns all
+        const images = res.data.filter(p => p.mediaType !== "reel")
+        setSavedPosts(images)
       } catch (err) {
         console.log("saved posts error:", err)
         setSavedPosts([])
       }
     }
 
-    // ── saved reels ──
+    // ── Saved reels — from User.savedPosts filtered by mediaType=reel ──
     const fetchSavedReels = async () => {
       try {
-        // Try dedicated saved-reels endpoint first
         const res = await API.get(`/reels/saved/${userId}`)
         setSavedReels(res.data)
       } catch (err) {
-        // Fallback: fetch all reels and filter by savedBy includes userId
-        try {
-          const res = await API.get("/reels")
-          const saved = res.data.filter(r =>
-            (r.savedBy || []).some(id => id?.toString() === userId?.toString())
-          )
-          setSavedReels(saved)
-        } catch (e) {
-          console.log("saved reels fallback error:", e)
-          setSavedReels([])
-        }
+        console.log("saved reels error:", err)
+        setSavedReels([])
       }
     }
 
-    // ── my stories ──
     const fetchMyStories = async () => {
       try {
         const { data } = await API.get("/stories")
@@ -115,35 +103,29 @@ export default function Profile() {
   const imgPosts  = posts.filter(p => p.mediaType !== "reel")
   const reelPosts = posts.filter(p => p.mediaType === "reel")
 
-  // ── what to show in grid based on tab ──
-  const displayed =
-    tab === "posts"  ? imgPosts :
-    tab === "reels"  ? reelPosts :
-    /* saved */        [...savedPosts, ...savedReels]   // merge both
-
-  const handleReelClick = (reelId) => navigate(`/reels?reelId=${reelId}`)
-
-  // ── determine if a given item is a reel ──
-  const isReel = (item) =>
-    item.mediaType === "reel" ||
-    // reels from /reels endpoint may not have mediaType but have different shape
-    (!item.mediaType && item.likes !== undefined && item.caption !== undefined && !item.savedBy?.length === undefined)
-    // safest fallback: check if it came from savedReels array
+  // savedReels array mein item hai toh reel hai
   const isItemReel = (item) =>
     item.mediaType === "reel" || savedReels.some(r => r._id === item._id)
+
+  const displayed =
+    tab === "posts" ? imgPosts :
+    tab === "reels" ? reelPosts :
+    [...savedPosts, ...savedReels]
+
+  const handleReelClick = (reelId) => navigate(`/reels?reelId=${reelId}`)
 
   return (
     <div className="flex bg-gray-50 min-h-screen">
       <Navbar />
 
-      <div className="flex-1 md:ml-64 flex justify-center">
-        <div className="w-full max-w-4xl px-3 sm:px-4 py-5 pb-24 md:pb-8">
+      <div className="flex-1 md:ml-64 flex justify-center min-w-0">
+        <div className="w-full max-w-4xl px-4 py-5 pb-24 md:pb-8">
 
           {/* ── PROFILE HEADER ── */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6 mb-5">
             <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-5">
 
-              {/* PROFILE PIC + STORY */}
+              {/* PROFILE PIC + STORY RING */}
               <div className="relative flex-shrink-0">
                 <div
                   onClick={() => {
@@ -257,7 +239,6 @@ export default function Profile() {
             >
               <FiBookmark size={15} />
               <span>Saved</span>
-              {/* badge showing total saved count */}
               {(savedPosts.length + savedReels.length) > 0 && (
                 <span className="ml-1 text-[10px] bg-indigo-100 text-indigo-600 font-bold px-1.5 py-0.5 rounded-full">
                   {savedPosts.length + savedReels.length}
@@ -282,21 +263,16 @@ export default function Profile() {
                     <video
                       src={post.media}
                       className="w-full h-full object-cover"
-                      muted
-                      playsInline
-                      preload="metadata"
+                      muted playsInline preload="metadata"
                     />
-                    {/* hover overlay */}
                     <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
                       <div className="w-10 h-10 bg-white/30 rounded-full flex items-center justify-center backdrop-blur-sm">
                         <FiFilm size={18} className="text-white" />
                       </div>
                     </div>
-                    {/* reel badge */}
                     <div className="absolute top-2 right-2">
                       <FiFilm size={14} className="text-white drop-shadow" />
                     </div>
-                    {/* saved badge (only in saved tab) */}
                     {tab === "saved" && (
                       <div className="absolute top-2 left-2">
                         <FiBookmark size={13} className="text-yellow-400 drop-shadow" fill="currentColor" />
@@ -315,7 +291,6 @@ export default function Profile() {
                     alt="post"
                     loading="lazy"
                   />
-                  {/* saved badge (only in saved tab) */}
                   {tab === "saved" && (
                     <div className="absolute top-2 left-2">
                       <FiBookmark size={13} className="text-yellow-400 drop-shadow" fill="currentColor" />
@@ -336,6 +311,9 @@ export default function Profile() {
                 : <FiGrid size={36} className="opacity-30" />
               }
               <p className="text-sm">No {tab} yet</p>
+              {tab === "saved" && (
+                <p className="text-xs text-gray-300">Save posts & reels to see them here</p>
+              )}
             </div>
           )}
 

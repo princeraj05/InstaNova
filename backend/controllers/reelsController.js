@@ -149,7 +149,6 @@ export const toggleFollow = async (req, res) => {
     }
 
     await Promise.all([target.save(), me.save()])
-
     res.json({ following: !isFollowing })
 
   } catch {
@@ -158,7 +157,9 @@ export const toggleFollow = async (req, res) => {
 }
 
 // ==============================
-// SAVE
+// SAVE  ← FIXED
+// Saves reel ID into User.savedPosts array
+// (same array posts use karte hain — unified saved list)
 // ==============================
 export const toggleSave = async (req, res) => {
   try {
@@ -166,20 +167,22 @@ export const toggleSave = async (req, res) => {
     const userId = req.user._id
 
     const user = await User.findById(userId)
+    if (!user) return res.status(404).json({ message: "User not found" })
 
-    const saved = user.savedPosts.includes(id)
+    // Check if this reel/post id is already saved
+    const alreadySaved = user.savedPosts.some(p => p.toString() === id.toString())
 
-    if (saved) {
-      user.savedPosts = user.savedPosts.filter(p => p.toString() !== id)
+    if (alreadySaved) {
+      user.savedPosts = user.savedPosts.filter(p => p.toString() !== id.toString())
     } else {
       user.savedPosts.push(id)
     }
 
     await user.save()
+    res.json({ saved: !alreadySaved })
 
-    res.json({ saved: !saved })
-
-  } catch {
+  } catch (err) {
+    console.error("toggleSave error:", err)
     res.status(500).json({ message: "Error toggling save" })
   }
 }
