@@ -55,7 +55,7 @@ export default function Login() {
               <circle cx="17.5" cy="6.5" r="1.5" fill="white" stroke="none"/>
             </svg>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">Instagram</h1>
+          <h1 className="text-2xl font-bold text-gray-900">InstaNova</h1>
           <p className="text-sm text-gray-400 mt-1">Sign in to your account</p>
         </div>
 
